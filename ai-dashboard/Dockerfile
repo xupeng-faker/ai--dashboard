@@ -1,6 +1,18 @@
 # 构建阶段
 FROM node:20-alpine AS builder
 
+# 支持代理构建参数
+ARG http_proxy
+ARG https_proxy
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+
+# 设置代理环境变量
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
+ENV HTTP_PROXY=${HTTP_PROXY}
+ENV HTTPS_PROXY=${HTTPS_PROXY}
+
 WORKDIR /app
 
 # 复制 package 文件
