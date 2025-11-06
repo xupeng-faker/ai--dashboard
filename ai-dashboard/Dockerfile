@@ -33,8 +33,8 @@ FROM nginx:alpine
 # 复制构建产物到 nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 复制 nginx 配置文件（如果存在）
-COPY nginx.conf /etc/nginx/conf.d/default.conf 2>/dev/null || true
+# 复制 nginx 配置文件
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 暴露端口
 EXPOSE 80
