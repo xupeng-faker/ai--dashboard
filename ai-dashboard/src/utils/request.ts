@@ -14,22 +14,31 @@ class Request {
   }
 
   async request<T>(url: string, options: RequestOptions = {}): Promise<T> {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...options.headers,
+    const headers = new Headers({ 'Content-Type': 'application/json' })
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => headers.set(key, value))
+    } else if (Array.isArray(options.headers)) {
+      options.headers.forEach(([key, value]) => headers.set(key, value))
+    } else if (options.headers) {
+      Object.entries(options.headers).forEach(([key, value]) => {
+        if (value !== undefined) {
+          headers.set(key, value as string)
+        }
+      })
     }
 
     const token = localStorage.getItem('token')
     if (token) {
-      headers.Authorization = `Bearer ${token}`
+      headers.set('Authorization', `Bearer ${token}`)
     }
 
     const controller = new AbortController()
     const timeoutId = window.setTimeout(() => controller.abort(), options.timeout ?? this.timeout)
+    const { headers: _originalHeaders, ...restOptions } = options
 
     try {
       const response = await fetch(`${this.baseURL}${url}`, {
-        ...options,
+        ...restOptions,
         headers,
         signal: controller.signal,
       })

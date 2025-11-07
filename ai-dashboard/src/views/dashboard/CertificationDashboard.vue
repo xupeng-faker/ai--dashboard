@@ -1,95 +1,388 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { Medal } from '@element-plus/icons-vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { Medal, RefreshRight } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { fetchCertifications } from '@/api/dashboard'
+import { fetchCertificationDashboard } from '@/api/dashboard'
 import StatCard from '@/components/common/StatCard.vue'
-import CertificationOverview from '@/components/dashboard/CertificationOverview.vue'
-import type { CertificationItem, MetricItem } from '@/types/dashboard'
+import CertificationSummaryTable from '@/components/dashboard/CertificationSummaryTable.vue'
+import BarLineChart from '@/components/dashboard/BarLineChart.vue'
+import type {
+  CertificationDashboardData,
+  CertificationDashboardFilters,
+  DepartmentNode,
+} from '@/types/dashboard'
 
 const router = useRouter()
-const certifications = ref<CertificationItem[]>([])
 const loading = ref(false)
-const metrics = ref<MetricItem[]>([])
+const dashboardData = ref<CertificationDashboardData | null>(null)
+const filters = ref<CertificationDashboardFilters>({
+  role: '全员',
+  departmentPath: [],
+})
+
+const cascaderProps = computed(() => ({
+  value: 'value',
+  label: 'label',
+  children: 'children',
+  expandTrigger: 'hover' as const,
+  emitPath: true,
+}))
+
+const departmentOptions = computed<DepartmentNode[]>(
+  () => dashboardData.value?.filters.departmentTree ?? []
+)
+
+const roleOptions = computed(() => dashboardData.value?.filters.roles ?? [])
+const maturityOptions = computed(() => dashboardData.value?.filters.maturityOptions ?? [])
 
 const fetchData = async () => {
   loading.value = true
   try {
-    const certRes = await fetchCertifications()
-    certifications.value = certRes
-    const total = certRes.length
-    const participants = certRes.reduce((acc, cur) => acc + cur.participants, 0)
-    const averagePass = Math.round(certRes.reduce((acc, cur) => acc + cur.passRate, 0) / (total || 1))
-    metrics.value = [
-      { id: 'cert-total', title: '认证体系', value: total, unit: '项', delta: 1, trend: 'up' },
-      { id: 'participants', title: '累计参与人数', value: participants, unit: '人', delta: 86, trend: 'up' },
-      { id: 'average-pass', title: '平均通过率', value: averagePass, unit: '%', delta: 3, trend: 'up' },
-      { id: 'active', title: '进行中认证', value: certRes.filter((item) => item.status === '进行中').length, unit: '项', delta: 1, trend: 'up' },
-    ]
+    dashboardData.value = await fetchCertificationDashboard({
+      ...filters.value,
+      departmentPath: filters.value.departmentPath?.length
+        ? [...(filters.value.departmentPath ?? [])]
+        : undefined,
+    })
   } finally {
     loading.value = false
   }
 }
 
-const handleViewDetail = (id: string) => {
-  router.push({ name: 'CertificationDetail', params: { id } })
+const handleCellClick = (row: Record<string, unknown>, column: string) => {
+  router.push({
+    name: 'CertificationDetail',
+    params: { id: 'detail' },
+    query: {
+      column,
+      maturity: (row.maturityLevel as string) ?? '',
+      jobCategory: (row.jobCategory as string) ?? '',
+      role: filters.value.role,
+    },
+  })
 }
+
+const resetFilters = () => {
+  filters.value = {
+    role: '全员',
+    departmentPath: [],
+    maturity: '全部',
+  }
+}
+
+watch(
+  filters,
+  () => {
+    fetchData()
+  },
+  { deep: true }
+)
 
 onMounted(() => {
   fetchData()
 })
-
-const capabilityMatrix = [
-  { dimension: '业务理解', description: '洞察业务痛点，设计可落地的 AI 方案', score: 86 },
-  { dimension: '技术掌握', description: '掌握模型训练、Prompt 设计与部署流程', score: 78 },
-  { dimension: '运营赋能', description: '具备组织推动力与培训交付能力', score: 74 },
-]
 </script>
 
 <template>
   <section class="dashboard certification-dashboard">
-    <header class="dashboard__header">
-      <div>
+    <header class="dashboard__header glass-card">
+      <div class="header-info">
         <h2>AI 任职认证看板</h2>
-        <p>保障 AI 人才体系建设，监控认证报名与通过效果，驱动能力闭环。</p>
+        <p>
+          覆盖专家、干部与全员多维度的任职与认证进度，支持六级部门级联筛选，帮助快速识别薄弱环节与提升方向。
+        </p>
       </div>
-      <el-space>
-        <el-button type="primary" plain>导出认证成绩</el-button>
-        <el-button type="primary">创建认证计划</el-button>
+      <el-space :size="12">
+        <el-button type="primary" plain :icon="RefreshRight" @click="fetchData">刷新数据</el-button>
+        <el-button type="primary">导出报告</el-button>
       </el-space>
     </header>
 
-    <el-skeleton :rows="4" animated v-if="loading" />
-    <template v-else>
+    <el-card shadow="hover" class="filter-card">
+      <el-form :inline="true" :model="filters" label-width="92">
+        <el-form-item label="部门筛选">
+          <el-cascader
+            v-model="filters.departmentPath"
+            :options="departmentOptions"
+            :props="cascaderProps"
+            placeholder="可选择至六级部门"
+            clearable
+            separator=" / "
+          />
+        </el-form-item>
+        <el-form-item label="组织成熟度">
+          <el-select v-model="filters.maturity" placeholder="全部" clearable style="width: 160px">
+            <el-option v-for="opt in maturityOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="角色视图">
+          <el-select v-model="filters.role" placeholder="全员" style="width: 160px">
+            <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button text type="primary" @click="resetFilters">重置筛选</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-skeleton :rows="6" animated v-if="loading" />
+    <template v-else-if="dashboardData">
       <el-row :gutter="16" class="metric-row">
-        <el-col v-for="metric in metrics" :key="metric.id" :xs="24" :sm="12" :md="6">
-          <StatCard :title="metric.title" :value="metric.value" :unit="metric.unit" :delta="metric.delta" :trend="metric.trend" />
+        <el-col v-for="metric in dashboardData.metrics" :key="metric.id" :xs="24" :sm="12" :md="6">
+          <StatCard
+            :title="metric.title"
+            :value="metric.value"
+            :unit="metric.unit"
+            :delta="metric.delta"
+            :trend="metric.trend"
+            subtitle="较上期"
+          />
         </el-col>
       </el-row>
 
-      <CertificationOverview :certifications="certifications" @view-detail="handleViewDetail" />
+      <el-row :gutter="16" class="summary-table-grid">
+        <el-col :xs="24" :lg="12">
+          <CertificationSummaryTable
+            title="专家AI任职认证数据表格1"
+            :columns="[
+              { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
+              { prop: 'jobCategory', label: '职位类', width: 140 },
+              {
+                prop: 'baseline',
+                label: '基线人数',
+                width: 110,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'certified',
+                label: '已完成AI认证人数',
+                width: 170,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'certificationRate',
+                label: 'AI认证人数占比',
+                width: 150,
+                valueType: 'percent',
+              },
+            ]"
+            :data="dashboardData.expertCertification"
+            :on-cell-click="handleCellClick"
+          />
+        </el-col>
+        <el-col :xs="24" :lg="12">
+          <CertificationSummaryTable
+            title="专家AI任职认证数据表格2"
+            :columns="[
+              { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
+              { prop: 'jobCategory', label: '职位类', width: 140 },
+              {
+                prop: 'baseline',
+                label: '基线人数',
+                width: 110,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'appointed',
+                label: 'AI任职人数',
+                width: 130,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'appointedByRequirement',
+                label: '按要求AI任职人数',
+                width: 180,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'appointmentRate',
+                label: 'AI任职率',
+                width: 130,
+                valueType: 'percent',
+              },
+              {
+                prop: 'certificationCompliance',
+                label: '按要求AI认证人数占比',
+                width: 190,
+                valueType: 'percent',
+              },
+            ]"
+            :data="dashboardData.expertAppointment"
+            :on-cell-click="handleCellClick"
+          />
+        </el-col>
+        <el-col :xs="24" :lg="12">
+          <CertificationSummaryTable
+            title="干部AI任职认证数据表格1"
+            :columns="[
+              { prop: 'maturityLevel', label: '干部岗位AI成熟度评估', width: 180 },
+              { prop: 'jobCategory', label: '职位类', width: 140 },
+              {
+                prop: 'baseline',
+                label: '基线人数',
+                width: 110,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'aiCertificateHolders',
+                label: 'AI专业级持证人数',
+                width: 180,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'subjectTwoPassed',
+                label: '科目二通过人数',
+                width: 160,
+                valueType: 'number',
+              },
+              {
+                prop: 'certificateRate',
+                label: 'AI专业级持证率',
+                width: 150,
+                valueType: 'percent',
+              },
+              {
+                prop: 'subjectTwoRate',
+                label: '科目二通过率',
+                width: 140,
+                valueType: 'percent',
+              },
+              {
+                prop: 'complianceRate',
+                label: '按要求持证率',
+                width: 130,
+                valueType: 'percent',
+              },
+            ]"
+            :data="dashboardData.cadreCertification"
+            :on-cell-click="handleCellClick"
+          />
+        </el-col>
+        <el-col :xs="24" :lg="12">
+          <CertificationSummaryTable
+            title="干部AI任职认证数据表格2"
+            :columns="[
+              { prop: 'maturityLevel', label: '干部岗位AI成熟度评估', width: 180 },
+              { prop: 'jobCategory', label: '职位类', width: 140 },
+              {
+                prop: 'baseline',
+                label: '基线人数',
+                width: 110,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'appointed',
+                label: 'AI任职人数',
+                width: 130,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'appointedByRequirement',
+                label: '按要求AI任职人数',
+                width: 180,
+                clickable: true,
+                valueType: 'number',
+              },
+              {
+                prop: 'appointmentRate',
+                label: 'AI任职率',
+                width: 130,
+                valueType: 'percent',
+              },
+              {
+                prop: 'certificationCompliance',
+                label: '按要求AI认证人数占比',
+                width: 190,
+                valueType: 'percent',
+              },
+            ]"
+            :data="dashboardData.cadreAppointment"
+            :on-cell-click="handleCellClick"
+          />
+        </el-col>
+      </el-row>
 
-      <el-card shadow="hover" class="matrix-card">
+      <el-card shadow="hover" class="charts-section">
         <template #header>
-          <div class="matrix-card__header">
-            <h3>
+          <div class="charts-header">
+            <div class="charts-title">
               <el-icon><Medal /></el-icon>
-              能力画像指标
-            </h3>
-            <span>辅助洞察认证人才的能力结构与短板</span>
+              <div>
+                <h3>全员任职/认证趋势</h3>
+                <p>任职、认证人数使用柱状图展示，同时叠加占比折线辅助判读效率</p>
+              </div>
+            </div>
           </div>
         </template>
         <el-row :gutter="16">
-          <el-col v-for="item in capabilityMatrix" :key="item.dimension" :xs="24" :md="8">
-            <el-card shadow="never" class="matrix-card__item">
-              <h4>{{ item.dimension }}</h4>
-              <p>{{ item.description }}</p>
-              <el-progress :percentage="item.score" :stroke-width="6" />
-            </el-card>
+          <el-col :xs="24" :lg="12">
+            <BarLineChart
+              title="部门任职数据"
+              :points="dashboardData.allStaff.departmentAppointment"
+              count-label="任职人数"
+              rate-label="占比"
+              :height="320"
+            />
+          </el-col>
+          <el-col :xs="24" :lg="12">
+            <BarLineChart
+              title="组织AI成熟度任职数据"
+              :points="dashboardData.allStaff.organizationAppointment"
+              count-label="任职人数"
+              rate-label="占比"
+              :height="320"
+            />
+          </el-col>
+          <el-col :xs="24" :lg="12">
+            <BarLineChart
+              title="职位类任职数据"
+              :points="dashboardData.allStaff.jobCategoryAppointment"
+              count-label="任职人数"
+              rate-label="占比"
+              :height="320"
+            />
+          </el-col>
+          <el-col :xs="24" :lg="12">
+            <BarLineChart
+              title="部门认证数据"
+              :points="dashboardData.allStaff.departmentCertification"
+              count-label="认证人数"
+              rate-label="占比"
+              :height="320"
+            />
+          </el-col>
+          <el-col :xs="24" :lg="12">
+            <BarLineChart
+              title="组织AI成熟度认证数据"
+              :points="dashboardData.allStaff.organizationCertification"
+              count-label="认证人数"
+              rate-label="占比"
+              :height="320"
+            />
+          </el-col>
+          <el-col :xs="24" :lg="12">
+            <BarLineChart
+              title="职位类认证数据"
+              :points="dashboardData.allStaff.jobCategoryCertification"
+              count-label="认证人数"
+              rate-label="占比"
+              :height="320"
+            />
           </el-col>
         </el-row>
       </el-card>
     </template>
+    <el-empty v-else description="暂无数据" />
   </section>
 </template>
 
@@ -98,16 +391,79 @@ const capabilityMatrix = [
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+}
 
-  &__header {
+.glass-card {
+  border-radius: $radius-lg;
+  background: linear-gradient(135deg, rgba(58, 122, 254, 0.18), rgba(155, 92, 255, 0.16));
+  box-shadow: 0 18px 45px rgba(58, 122, 254, 0.12);
+  padding: $spacing-lg;
+  color: #fff;
+
+  h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  p {
+    margin: $spacing-sm 0 0;
+    color: rgba(255, 255, 255, 0.86);
+    max-width: 600px;
+    line-height: 1.6;
+  }
+}
+
+.header-info {
+  max-width: 640px;
+}
+
+.filter-card {
+  border: none;
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: $shadow-card;
+}
+
+.metric-row {
+  margin-top: $spacing-xs;
+}
+
+.summary-table-grid {
+  margin-top: $spacing-sm;
+
+  :deep(.el-col) {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: $spacing-lg;
+  }
 
-    h2 {
+  :deep(.summary-table-card) {
+    width: 100%;
+  }
+}
+
+.charts-section {
+  border: none;
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.96);
+
+  :deep(.el-card__body) {
+    padding: $spacing-lg;
+  }
+
+  :deep(.el-row) {
+    row-gap: $spacing-lg;
+  }
+
+  .charts-title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+
+    h3 {
       margin: 0;
-      font-size: 24px;
+      font-size: 18px;
+      font-weight: 600;
+      color: $text-main-color;
     }
 
     p {
@@ -117,55 +473,10 @@ const capabilityMatrix = [
   }
 }
 
-.metric-row {
-  margin-top: $spacing-xs;
-}
-
-.matrix-card {
-  border: none;
-
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-
-    h3 {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin: 0;
-    }
-
-    span {
-      color: $text-secondary-color;
-      font-size: 12px;
-    }
-  }
-
-  &__item {
-    border-radius: $radius-md;
-    border: 1px solid rgba(58, 122, 254, 0.08);
-    background: rgba(255, 255, 255, 0.95);
-    min-height: 160px;
-
-    h4 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    p {
-      color: $text-secondary-color;
-      min-height: 48px;
-    }
-  }
-}
-
 @media (max-width: 768px) {
-  .dashboard__header {
+  .glass-card {
     flex-direction: column;
-    align-items: flex-start;
+    gap: $spacing-md;
   }
 }
 </style>
-

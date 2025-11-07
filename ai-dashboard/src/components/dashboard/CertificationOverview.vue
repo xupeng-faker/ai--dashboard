@@ -29,7 +29,7 @@ const statusTypeMap: Record<CertificationItem['status'], 'success' | 'warning' |
         <el-button type="primary" plain round size="small">创建新认证</el-button>
       </div>
     </template>
-    <el-table :data="certifications" border>
+    <el-table :data="props.certifications" border>
       <el-table-column prop="name" label="认证名称" min-width="200" />
       <el-table-column prop="level" label="等级" width="100" />
       <el-table-column label="参与人数" width="120">
@@ -44,7 +44,7 @@ const statusTypeMap: Record<CertificationItem['status'], 'success' | 'warning' |
       </el-table-column>
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
-          <el-tag :type="statusTypeMap[row.status]" effect="light">{{ row.status }}</el-tag>
+          <el-tag :type="statusTypeMap[row.status as keyof typeof statusTypeMap]" effect="light">{{ row.status }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="updatedAt" label="更新时间" width="160" />

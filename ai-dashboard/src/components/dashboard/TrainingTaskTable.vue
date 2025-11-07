@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRefs } from 'vue'
 import type { TrainingTask } from '../../types/dashboard'
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { tasks } = toRefs(props)
 const emit = defineEmits<{
   (e: 'view-detail', id: string): void
 }>()
@@ -18,9 +19,9 @@ const statusTagTypeMap: Record<TrainingTask['status'], 'success' | 'warning' | '
 }
 
 const stats = computed(() => {
-  const total = props.tasks.length
-  const completed = props.tasks.filter((item) => item.status === '已完成').length
-  const inProgress = props.tasks.filter((item) => item.status === '进行中').length
+  const total = tasks.value.length
+  const completed = tasks.value.filter((item) => item.status === '已完成').length
+  const inProgress = tasks.value.filter((item) => item.status === '进行中').length
   return {
     total,
     completed,
@@ -51,7 +52,7 @@ const stats = computed(() => {
       </el-table-column>
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
-          <el-tag :type="statusTagTypeMap[row.status]" effect="light">{{ row.status }}</el-tag>
+          <el-tag :type="statusTagTypeMap[row.status as keyof typeof statusTagTypeMap]" effect="light">{{ row.status }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="updatedAt" label="最近更新" width="180" />

@@ -30,7 +30,7 @@ const getTagType = (completion: number) => {
       </div>
     </template>
     <el-row :gutter="16">
-      <el-col v-for="course in courses" :key="course.id" :xs="24" :sm="12" :md="8">
+      <el-col v-for="course in props.courses" :key="course.id" :xs="24" :sm="12" :md="8">
         <el-card shadow="never" class="course-card__item">
           <div class="course-card__item-header">
             <el-tag type="info" effect="plain">{{ course.category }}</el-tag>

@@ -1,19 +1,47 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { ArrowLeft, Trophy } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
-import { fetchCertificationDetail } from '@/api/dashboard'
-import type { CertificationItem } from '@/types/dashboard'
+import { computed, onMounted, ref, watch } from 'vue'
+import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
+import { fetchCertificationDetailData } from '@/api/dashboard'
+import type {
+  CertificationDetailData,
+  CertificationDetailFilters,
+  DepartmentNode,
+} from '@/types/dashboard'
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
-const detail = ref<CertificationItem | undefined>()
+const detailData = ref<CertificationDetailData | null>(null)
+const activeTab = ref<'certification' | 'appointment'>('certification')
+const filters = ref<CertificationDetailFilters>({
+  role: (route.query.role as any) ?? '全员',
+  maturity: '全部',
+  departmentPath: [],
+})
+
+const cascaderProps = computed(() => ({
+  value: 'value',
+  label: 'label',
+  children: 'children',
+  emitPath: true,
+  expandTrigger: 'hover' as const,
+}))
+
+const departmentOptions = computed<DepartmentNode[]>(
+  () => detailData.value?.filters.departmentTree ?? []
+)
 
 const fetchDetail = async () => {
   loading.value = true
   try {
-    detail.value = await fetchCertificationDetail(props.id)
+    detailData.value = await fetchCertificationDetailData(props.id, {
+      ...filters.value,
+      departmentPath: filters.value.departmentPath?.length
+        ? [...(filters.value.departmentPath ?? [])]
+        : undefined,
+    })
   } finally {
     loading.value = false
   }
@@ -23,82 +51,284 @@ const handleBack = () => {
   router.push({ name: 'CertificationDashboard' })
 }
 
-onMounted(() => {
-  fetchDetail()
+const resetFilters = () => {
+  filters.value = {
+    role: '全员',
+    maturity: '全部',
+    departmentPath: [],
+    jobFamily: undefined,
+    jobCategory: undefined,
+    jobSubCategory: undefined,
+  }
+}
+
+const formatBoolean = (value: boolean) => (value ? '是' : '否')
+
+const summaryMetrics = computed(() => {
+  if (!detailData.value) return []
+  const { certificationRecords, appointmentRecords } = detailData.value
+  const qualifiedCount = certificationRecords.filter((item) => item.isQualified).length
+  const appointmentQualified = appointmentRecords.filter((item) => item.isQualified).length
+
+  return [
+    { label: '认证记录', value: certificationRecords.length, unit: '条' },
+    { label: '任职记录', value: appointmentRecords.length, unit: '条' },
+    {
+      label: '认证达标率',
+      value: certificationRecords.length
+        ? Math.round((qualifiedCount / certificationRecords.length) * 100)
+        : 0,
+      unit: '%',
+    },
+    {
+      label: '任职达标率',
+      value: appointmentRecords.length
+        ? Math.round((appointmentQualified / appointmentRecords.length) * 100)
+        : 0,
+      unit: '%',
+    },
+  ]
 })
 
-const assessmentStages = [
-  { title: '报名审核', desc: '确认岗位匹配度与学习完成情况', status: '完成' },
-  { title: '在线考试', desc: '60 分钟闭卷考试，满分 100 分', status: '进行中' },
-  { title: '案例答辩', desc: '提交业务场景方案，现场评委问答', status: '待开始' },
-]
+watch(
+  filters,
+  () => {
+    fetchDetail()
+  },
+  { deep: true }
+)
 
-const scoreDistribution = [
-  { label: '知识理解', score: 86 },
-  { label: '实践能力', score: 78 },
-  { label: '影响力', score: 72 },
-]
+onMounted(() => {
+  if (route.query.column === 'baseline') {
+    activeTab.value = 'certification'
+  }
+  fetchDetail()
+})
 </script>
 
 <template>
   <section class="detail-view cert-detail">
-    <header class="detail-view__header">
-      <el-button type="primary" text :icon="ArrowLeft" @click="handleBack">返回认证列表</el-button>
-      <div>
-        <h2>{{ detail?.name ?? '认证详情' }}</h2>
-        <p>查看认证流程、成绩表现与提升建议，支撑人才体系建设。</p>
+    <header class="detail-view__header glass-card">
+      <div class="header-left">
+        <el-button type="primary" text :icon="ArrowLeft" @click="handleBack">返回看板</el-button>
+        <div>
+          <h2>{{ detailData?.summary?.name ?? 'AI任职认证详情' }}</h2>
+          <p>
+            支持六级部门级联、职位族与成熟度多维筛选，结合盘点明细掌握人才任职与认证达标情况。
+          </p>
+        </div>
       </div>
       <el-space>
-        <el-button type="primary" plain>导出成绩</el-button>
-        <el-button type="primary">安排补考</el-button>
+        <el-button type="primary" plain :icon="Refresh" @click="fetchDetail">刷新数据</el-button>
+        <el-button type="primary">导出报表</el-button>
       </el-space>
     </header>
 
-    <el-skeleton :rows="6" animated v-if="loading" />
-    <el-empty v-else-if="!detail" description="未找到对应认证" />
-    <template v-else>
-      <el-descriptions border :column="2" title="认证基础信息" class="detail-block">
-        <el-descriptions-item label="认证等级">{{ detail.level }}</el-descriptions-item>
-        <el-descriptions-item label="参与人数">{{ detail.participants }}</el-descriptions-item>
-        <el-descriptions-item label="平均通过率">{{ detail.passRate }}%</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ detail.status }}</el-descriptions-item>
-        <el-descriptions-item label="最近更新">{{ detail.updatedAt }}</el-descriptions-item>
-        <el-descriptions-item label="认证周期">T+30 天</el-descriptions-item>
-      </el-descriptions>
+    <el-card shadow="hover" class="filter-card">
+      <el-form :inline="true" :model="filters" label-width="90">
+        <el-form-item label="部门筛选">
+          <el-cascader
+            v-model="filters.departmentPath"
+            :options="departmentOptions"
+            :props="cascaderProps"
+            clearable
+            placeholder="可选择至六级部门"
+            separator=" / "
+            style="min-width: 260px"
+          />
+        </el-form-item>
+        <el-form-item label="职位族">
+          <el-select
+            v-model="filters.jobFamily"
+            placeholder="全部"
+            clearable
+            style="width: 160px"
+          >
+            <el-option
+              v-for="family in detailData?.filters.jobFamilies ?? []"
+              :key="family"
+              :label="family"
+              :value="family"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="职位类">
+          <el-select
+            v-model="filters.jobCategory"
+            placeholder="全部"
+            clearable
+            style="width: 160px"
+          >
+            <el-option
+              v-for="category in detailData?.filters.jobCategories ?? []"
+              :key="category"
+              :label="category"
+              :value="category"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="职位子类">
+          <el-select
+            v-model="filters.jobSubCategory"
+            placeholder="全部"
+            clearable
+            style="width: 160px"
+          >
+            <el-option
+              v-for="sub in detailData?.filters.jobSubCategories ?? []"
+              :key="sub"
+              :label="sub"
+              :value="sub"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="角色视图">
+          <el-select v-model="filters.role" placeholder="全员" style="width: 150px">
+            <el-option
+              v-for="role in detailData?.filters.roles ?? []"
+              :key="role.value"
+              :label="role.label"
+              :value="role.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="成熟度">
+          <el-select v-model="filters.maturity" placeholder="全部" style="width: 140px">
+            <el-option
+              v-for="opt in detailData?.filters.maturityOptions ?? []"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button text type="primary" @click="resetFilters">重置筛选</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
 
-      <el-card shadow="hover" class="detail-block">
-        <template #header>
-          <div class="card-header">
-            <h3>认证流程</h3>
-            <span>清晰掌握候选人的认证旅程</span>
-          </div>
-        </template>
-        <el-steps direction="vertical" :active="1">
-          <el-step v-for="stage in assessmentStages" :key="stage.title" :title="stage.title" :description="`${stage.desc} · ${stage.status}`" />
-        </el-steps>
-      </el-card>
-
-      <el-card shadow="hover" class="detail-block">
-        <template #header>
-          <div class="card-header">
-            <h3>
-              <el-icon><Trophy /></el-icon>
-              能力得分分布
-            </h3>
-            <span>基于认证成绩的维度化分析</span>
-          </div>
-        </template>
+    <el-skeleton :rows="8" animated v-if="loading" />
+    <template v-else-if="detailData">
+      <el-card shadow="hover" class="summary-card">
         <el-row :gutter="16">
-          <el-col v-for="item in scoreDistribution" :key="item.label" :xs="24" :md="8">
-            <el-card shadow="never" class="score-card">
-              <p class="label">{{ item.label }}</p>
-              <p class="score">{{ item.score }}<small>分</small></p>
-              <el-progress :percentage="item.score" :stroke-width="6" />
-            </el-card>
+          <el-col v-for="item in summaryMetrics" :key="item.label" :xs="12" :md="6">
+            <div class="summary-item">
+              <p>{{ item.label }}</p>
+              <h3>
+                {{ item.value }}
+                <small>{{ item.unit }}</small>
+              </h3>
+            </div>
           </el-col>
         </el-row>
       </el-card>
+
+      <el-card shadow="hover" class="detail-card">
+        <el-tabs v-model="activeTab" stretch class="detail-tabs">
+          <el-tab-pane label="AI 认证盘点" name="certification">
+            <el-table :data="detailData.certificationRecords" border stripe height="520" highlight-current-row>
+              <el-table-column prop="name" label="姓名" width="120" fixed="left" />
+              <el-table-column prop="employeeId" label="工号" width="140" />
+              <el-table-column prop="positionCategory" label="职位类" width="140" />
+              <el-table-column prop="positionSubCategory" label="职位子类" width="140" />
+              <el-table-column prop="departmentLevel1" label="一级部门" width="140" />
+              <el-table-column prop="departmentLevel2" label="二级部门" width="140" />
+              <el-table-column prop="departmentLevel3" label="三级部门" width="140" />
+              <el-table-column prop="departmentLevel4" label="四级部门" width="140" />
+              <el-table-column prop="departmentLevel5" label="五级部门" width="140" />
+              <el-table-column prop="departmentLevel6" label="六级部门" width="140" />
+              <el-table-column prop="minDepartment" label="最小部门" width="160" />
+              <el-table-column prop="certificateName" label="证书名称" width="160" />
+              <el-table-column prop="certificateEffectiveDate" label="证书生效日期" width="160" />
+              <el-table-column label="是否通过科目二" width="150">
+                <template #default="{ row }">
+                  <el-tag :type="row.subjectTwoPassed ? 'success' : 'info'" effect="light">
+                    {{ formatBoolean(row.subjectTwoPassed) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="是否干部" width="110">
+                <template #default="{ row }">
+                  {{ formatBoolean(row.isCadre) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="cadreType" label="干部类型" width="140" />
+              <el-table-column label="是否专家" width="110">
+                <template #default="{ row }">
+                  {{ formatBoolean(row.isExpert) }}
+                </template>
+              </el-table-column>
+              <el-table-column label="是否基层主管" width="140">
+                <template #default="{ row }">
+                  {{ formatBoolean(row.isFrontlineManager) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150" />
+              <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" />
+              <el-table-column prop="requiredCertificate" label="要求持证类型" width="160" />
+              <el-table-column label="是否达标" width="120">
+                <template #default="{ row }">
+                  <el-tag :type="row.isQualified ? 'success' : 'danger'" effect="light">
+                    {{ formatBoolean(row.isQualified) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+          <el-tab-pane label="AI 任职盘点" name="appointment">
+            <el-table :data="detailData.appointmentRecords" border stripe height="520" highlight-current-row>
+              <el-table-column prop="name" label="姓名" width="120" fixed="left" />
+              <el-table-column prop="employeeId" label="工号" width="140" />
+              <el-table-column prop="positionCategory" label="职位类" width="140" />
+              <el-table-column prop="positionSubCategory" label="职位子类" width="140" />
+              <el-table-column prop="departmentLevel1" label="一级部门" width="140" />
+              <el-table-column prop="departmentLevel2" label="二级部门" width="140" />
+              <el-table-column prop="departmentLevel3" label="三级部门" width="140" />
+              <el-table-column prop="departmentLevel4" label="四级部门" width="140" />
+              <el-table-column prop="departmentLevel5" label="五级部门" width="140" />
+              <el-table-column prop="departmentLevel6" label="六级部门" width="140" />
+              <el-table-column prop="minDepartment" label="最小部门" width="160" />
+              <el-table-column prop="professionalCategory" label="专业任职资格类" width="180" />
+              <el-table-column prop="expertCategory" label="专家任职资格类（仅体现AI）" width="220" />
+              <el-table-column prop="professionalSubCategory" label="专业任职资格子类" width="180" />
+              <el-table-column prop="qualificationDirection" label="资格方向" width="160" />
+              <el-table-column prop="qualificationLevel" label="资格级别" width="160" />
+              <el-table-column prop="acquisitionMethod" label="获取方式" width="160" />
+              <el-table-column prop="effectiveDate" label="生效日期" width="150" />
+              <el-table-column prop="expiryDate" label="失效日期" width="150" />
+              <el-table-column label="是否干部" width="110">
+                <template #default="{ row }">
+                  {{ formatBoolean(row.isCadre) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="cadreType" label="干部类型" width="140" />
+              <el-table-column label="是否专家" width="110">
+                <template #default="{ row }">
+                  {{ formatBoolean(row.isExpert) }}
+                </template>
+              </el-table-column>
+              <el-table-column label="是否基层主管" width="140">
+                <template #default="{ row }">
+                  {{ formatBoolean(row.isFrontlineManager) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150" />
+              <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" />
+              <el-table-column prop="requiredCertificate" label="要求持证类型" width="160" />
+              <el-table-column label="是否达标" width="120">
+                <template #default="{ row }">
+                  <el-tag :type="row.isQualified ? 'success' : 'danger'" effect="light">
+                    {{ formatBoolean(row.isQualified) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
     </template>
+    <el-empty v-else description="暂无详情数据" />
   </section>
 </template>
 
@@ -107,79 +337,103 @@ const scoreDistribution = [
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+}
 
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $spacing-lg;
+.glass-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-lg;
+  padding: $spacing-lg;
+  border-radius: $radius-lg;
+  background: linear-gradient(135deg, rgba(7, 116, 221, 0.18), rgba(61, 210, 255, 0.12));
+  box-shadow: 0 18px 40px rgba(7, 116, 221, 0.16);
 
-    h2 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 600;
-    }
+  h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+  }
 
-    p {
-      margin: $spacing-xs 0 0;
-      color: $text-secondary-color;
-    }
+  p {
+    margin: $spacing-sm 0 0;
+    max-width: 560px;
+    color: rgba(18, 33, 54, 0.78);
   }
 }
 
-.detail-block {
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.filter-card {
   border: none;
   border-radius: $radius-lg;
-  background: #fff;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
-
-  h3 {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 0;
-    font-size: 18px;
-  }
-
-  span {
-    color: $text-secondary-color;
-    font-size: 12px;
-  }
-}
-
-.score-card {
-  border-radius: $radius-md;
-  border: 1px solid rgba(58, 122, 254, 0.08);
   background: rgba(255, 255, 255, 0.96);
-  text-align: center;
-  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+}
 
-  .label {
-    margin: 0;
-    color: $text-secondary-color;
+.summary-card {
+  border: none;
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: $shadow-card;
+
+  .summary-item {
+    padding: $spacing-md;
+    border-radius: $radius-md;
+    background: linear-gradient(135deg, rgba(58, 122, 254, 0.06), rgba(58, 122, 254, 0.02));
+
+    p {
+      margin: 0;
+      color: $text-secondary-color;
+      font-size: 13px;
+    }
+
+    h3 {
+      margin: $spacing-xs 0 0;
+      font-size: 22px;
+      font-weight: 700;
+      color: $text-main-color;
+
+      small {
+        margin-left: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        color: $text-secondary-color;
+      }
+    }
+  }
+}
+
+.detail-card {
+  border: none;
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: $shadow-card;
+}
+
+.detail-tabs {
+  :deep(.el-tabs__nav-wrap::after) {
+    display: none;
   }
 
-  .score {
-    margin: $spacing-sm 0;
-    font-size: 28px;
-    font-weight: 700;
+  :deep(.el-tabs__item) {
+    font-weight: 600;
+    color: $text-secondary-color;
 
-    small {
-      font-size: 14px;
+    &.is-active {
+      color: $primary-color;
     }
   }
 }
 
 @media (max-width: 768px) {
-  .detail-view__header {
+  .glass-card {
     flex-direction: column;
     align-items: flex-start;
   }
 }
 </style>
-

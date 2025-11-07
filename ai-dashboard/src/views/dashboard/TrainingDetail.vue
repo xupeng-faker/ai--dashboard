@@ -70,11 +70,11 @@ const executionSteps = [
         </template>
         <el-steps :active="2" finish-status="success">
           <el-step
-            v-for="(step, index) in executionSteps"
+            v-for="step in executionSteps"
             :key="step.title"
             :title="step.title"
             :description="step.description"
-            :status="step.status as any"
+            :status="step.status as 'wait' | 'process' | 'finish' | 'error' | 'success'"
           />
         </el-steps>
       </el-card>
