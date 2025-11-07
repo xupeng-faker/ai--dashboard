@@ -123,10 +123,6 @@ const getOption = (): EChartsOption => {
         color: 'rgba(31, 45, 61, 0.78)',
         fontSize: 12,
       },
-      shadowBlur: 12,
-      shadowColor: 'rgba(17, 38, 72, 0.08)',
-      shadowOffsetX: 0,
-      shadowOffsetY: 6,
     },
     tooltip: {
       trigger: 'axis',
