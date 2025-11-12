@@ -18,7 +18,7 @@ export const DASHBOARD_TABS: readonly DashboardTabItem[] = [
   },
   {
     name: 'training',
-    label: 'AI训练看板',
+    label: 'AI训战看板',
     route: '/dashboard/training',
     icon: Cpu,
   },

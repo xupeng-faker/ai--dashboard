@@ -36,7 +36,7 @@ const routes: RouteRecordRaw[] = [
         name: 'TrainingDashboard',
         component: () => import('@/views/dashboard/TrainingDashboard.vue'),
         meta: {
-          title: 'AI训练看板',
+          title: 'AI训战看板',
           requiresAuth: true,
           keepAlive: true,
         },
@@ -46,7 +46,7 @@ const routes: RouteRecordRaw[] = [
         name: 'TrainingDetail',
         component: () => import('@/views/dashboard/TrainingDetail.vue'),
         meta: {
-          title: 'AI训练看板详情',
+          title: 'AI训战看板详情',
           requiresAuth: true,
           keepAlive: false,
         },
@@ -106,7 +106,9 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   if (to.meta.title) {
-    document.title = `${to.meta.title} - AI平台`
+    document.title = `${to.meta.title} - AI转型IT看板`
+  } else {
+    document.title = 'AI转型IT看板'
   }
 
   if (to.meta.requiresAuth) {

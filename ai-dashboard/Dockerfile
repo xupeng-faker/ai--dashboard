@@ -34,8 +34,8 @@ RUN npm run build
 ## 运行阶段：使用精简的 Nginx 镜像
 FROM nginx:1.27-alpine AS runtime
 
-## 将构建产物复制到 Nginx 默认站点目录
-COPY --from=builder /app/dist /usr/share/nginx/html
+## 将构建产物复制到 Nginx 默认站点目录的 /ai_transform 子路径
+COPY --from=builder /app/dist /usr/share/nginx/html/ai_transform
 
 ## 覆盖默认站点配置
 COPY nginx.conf /etc/nginx/conf.d/default.conf

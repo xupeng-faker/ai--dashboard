@@ -24,6 +24,170 @@ export interface TrainingTask {
   updatedAt: string
 }
 
+export type TrainingRole = '全员' | '干部' | '专家' | '基层主管'
+
+export interface TrainingPlanningResource {
+  id: string
+  title: string
+  owner: string
+  updatedAt: string
+  downloadUrl: string
+  description?: string
+}
+
+export interface TrainingPersonalOverviewRow {
+  classification: string
+  courseTotal: number
+  targetCompleted: number
+  actualCompleted: number
+  completionRate: number
+}
+
+export interface TrainingRoleSummaryRow {
+  maturityLevel: string
+  personCount: number
+  beginnerCourses: number
+  intermediateCourses: number
+  advancedCourses: number
+  practiceCourses: number
+  beginnerAvgLearners: number
+  intermediateAvgLearners: number
+  advancedAvgLearners: number
+  practiceAvgLearners: number
+  beginnerCompletionRate: number
+  intermediateCompletionRate: number
+  advancedCompletionRate: number
+  practiceCompletionRate: number
+}
+
+export interface TrainingExpertCadreSummaryRow {
+  dimension: string
+  personCount: number
+  beginnerCourses: number
+  intermediateCourses: number
+  advancedCourses: number
+  practiceCourses: number
+  beginnerAvgLearners: number
+  intermediateAvgLearners: number
+  advancedAvgLearners: number
+  practiceAvgLearners: number
+  beginnerCompletionRate: number
+  intermediateCompletionRate: number
+  advancedCompletionRate: number
+  practiceCompletionRate: number
+}
+
+export interface TrainingExpertCadreSummary {
+  title: string
+  dimensionLabel: string
+  rows: TrainingExpertCadreSummaryRow[]
+}
+
+export interface TrainingAllStaffSummaryRow {
+  dimension: string
+  baseline: number
+  beginnerCourses: number
+  intermediateCourses: number
+  advancedCourses: number
+  practiceCourses: number
+  beginnerAvgLearners: number
+  intermediateAvgLearners: number
+  advancedAvgLearners: number
+  practiceAvgLearners: number
+  beginnerCompletionRate: number
+  intermediateCompletionRate: number
+  advancedCompletionRate: number
+  practiceCompletionRate: number
+}
+
+export interface TrainingAllStaffSummaryGroup {
+  title: string
+  dimensionLabel: string
+  rows: TrainingAllStaffSummaryRow[]
+}
+
+export interface TrainingDashboardFilters {
+  departmentPath?: string[]
+  role?: TrainingRole
+}
+
+export interface TrainingDashboardData {
+  personalOverview: TrainingPersonalOverviewRow[]
+  expertSummary: TrainingRoleSummaryRow[]
+  cadreSummary: TrainingRoleSummaryRow[]
+  expertCadreSummary: TrainingExpertCadreSummary
+  allStaffSummary: {
+    role: TrainingRole
+    groups: TrainingAllStaffSummaryGroup[]
+  }
+  planningResources: TrainingPlanningResource[]
+  filters: {
+    departmentTree: DepartmentNode[]
+    roles: SelectOption<TrainingRole>[]
+  }
+}
+
+export interface TrainingBattleRecord {
+  id: string
+  name: string
+  employeeId: string
+  jobFamily: string
+  jobCategory: string
+  jobSubCategory: string
+  departmentPath: string[]
+  departmentLevel1: string
+  departmentLevel2: string
+  departmentLevel3: string
+  departmentLevel4: string
+  departmentLevel5: string
+  departmentLevel6: string
+  minDepartment: string
+  trainingCategory: string
+  courseCategory: string
+  courseName: string
+  isTargetCourse: boolean
+  isCompleted: boolean
+  completionDate?: string
+  isCadre: boolean
+  cadreType?: string
+  isExpert: boolean
+  isFrontlineManager: boolean
+  organizationMaturity: 'L1' | 'L2' | 'L3'
+  positionMaturity: 'L1' | 'L2' | 'L3'
+}
+
+export interface TrainingCoursePlanRecord {
+  id: string
+  trainingCategory: string
+  courseName: string
+  courseCode: string
+  targetAudience: string
+  credits: number
+  courseUrl: string
+}
+
+export interface TrainingDetailData {
+  records: TrainingBattleRecord[]
+  coursePlans: TrainingCoursePlanRecord[]
+  filters: {
+    departmentTree: DepartmentNode[]
+    jobFamilies: string[]
+    jobCategories: string[]
+    jobSubCategories: string[]
+    roles: SelectOption<TrainingRole>[]
+    maturityOptions: SelectOption<'全部' | 'L1' | 'L2' | 'L3'>[]
+  }
+}
+
+export interface TrainingDetailFilters {
+  departmentPath?: string[]
+  jobFamily?: string
+  jobCategory?: string
+  jobSubCategory?: string
+  role?: TrainingRole
+  positionMaturity?: '全部' | 'L1' | 'L2' | 'L3'
+}
+
 export interface CourseItem {
   id: string
   title: string
@@ -166,6 +330,131 @@ export interface StaffChartPoint {
 export interface SelectOption<T extends string> {
   label: string
   value: T
+}
+
+export type SchoolRole = '全员' | '干部' | '专家' | '基层主管'
+
+export interface SchoolPersonalOverview {
+  targetCredits: number
+  currentCredits: number
+  completionRate: number
+  benchmarkRate: number
+  scheduleTarget: number
+  expectedCompletionDate: string
+  status: '正常' | '轻度预警' | '滞后预警'
+  statusType: 'success' | 'warning' | 'danger'
+}
+
+export interface SchoolRoleSummaryRow {
+  maturityLevel: string
+  baseline: number
+  maxCredits: number
+  minCredits: number
+  averageCredits: number
+  targetCredits: number
+  completionRate: number
+  scheduleTarget: number
+  status: '正常' | '轻度预警' | '滞后预警'
+  statusType: 'success' | 'warning' | 'danger'
+}
+
+export interface SchoolAllStaffSummaryRow {
+  dimension: string
+  baseline: number
+  maxCredits: number
+  minCredits: number
+  averageCredits: number
+  targetCredits: number
+  completionRate: number
+  scheduleTarget: number
+  status: '正常' | '轻度预警' | '滞后预警'
+  statusType: 'success' | 'warning' | 'danger'
+}
+
+export interface SchoolAllStaffSummaryGroup {
+  title: string
+  dimensionLabel: string
+  rows: SchoolAllStaffSummaryRow[]
+}
+
+export interface SchoolAllStaffSummary {
+  role: SchoolRole
+  groups: SchoolAllStaffSummaryGroup[]
+}
+
+export interface SchoolDashboardData {
+  personalOverview: SchoolPersonalOverview
+  expertSummary: SchoolRoleSummaryRow[]
+  cadreSummary: SchoolRoleSummaryRow[]
+  allStaffSummary: SchoolAllStaffSummary
+  filters: {
+    departmentTree: DepartmentNode[]
+    roles: SelectOption<SchoolRole>[]
+  }
+}
+
+export interface SchoolDashboardFilters {
+  departmentPath?: string[]
+  role?: SchoolRole
+}
+
+export interface SchoolCreditRecord {
+  id: string
+  name: string
+  employeeId: string
+  jobFamily: string
+  jobCategory: string
+  jobSubCategory: string
+  departmentPath: string[]
+  departmentLevel1: string
+  departmentLevel2: string
+  departmentLevel3: string
+  departmentLevel4: string
+  departmentLevel5: string
+  departmentLevel6?: string
+  minDepartment: string
+  isCadre: boolean
+  cadreType?: string
+  isExpert: boolean
+  isFrontlineManager: boolean
+  organizationMaturity: 'L1' | 'L2' | 'L3'
+  positionMaturity: 'L1' | 'L2' | 'L3'
+  currentCredits: number
+  completionRate: number
+  benchmarkRate: number
+  completionDate: string
+  scheduleTarget: number
+  status: '正常' | '轻度预警' | '滞后预警'
+  statusType: 'success' | 'warning' | 'danger'
+}
+
+export interface SchoolRuleRecord {
+  id: string
+  sourceType: string
+  content: string
+  credits: number
+}
+
+export interface SchoolDetailData {
+  records: SchoolCreditRecord[]
+  rules: SchoolRuleRecord[]
+  filters: {
+    departmentTree: DepartmentNode[]
+    jobFamilies: string[]
+    jobCategories: string[]
+    jobSubCategories: string[]
+    roles: SelectOption<SchoolRole>[]
+    maturityOptions: SelectOption<'全部' | 'L1' | 'L2' | 'L3'>[]
+  }
+}
+
+export interface SchoolDetailFilters {
+  departmentPath?: string[]
+  jobFamily?: string
+  jobCategory?: string
+  jobSubCategory?: string
+  role?: SchoolRole
+  positionMaturity?: '全部' | 'L1' | 'L2' | 'L3'
 }
 
 export interface CertificationDashboardFilters {

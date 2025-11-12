@@ -1,19 +1,46 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { ArrowLeft } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
+import { useRoute, useRouter } from 'vue-router'
 import { fetchTrainingDetail } from '@/api/dashboard'
-import type { TrainingTask } from '@/types/dashboard'
+import type {
+  TrainingDetailData,
+  TrainingDetailFilters,
+  DepartmentNode,
+} from '@/types/dashboard'
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
-const detail = ref<TrainingTask | undefined>()
+const detailData = ref<TrainingDetailData | null>(null)
+const filters = ref<TrainingDetailFilters>({
+  role: '全员',
+  positionMaturity: '全部',
+  departmentPath: [],
+})
+
+const cascaderProps = computed(() => ({
+  value: 'value',
+  label: 'label',
+  children: 'children',
+  emitPath: true,
+  expandTrigger: 'hover' as const,
+}))
+
+const departmentOptions = computed<DepartmentNode[]>(
+  () => detailData.value?.filters.departmentTree ?? []
+)
 
 const fetchDetail = async () => {
   loading.value = true
   try {
-    detail.value = await fetchTrainingDetail(props.id)
+    detailData.value = await fetchTrainingDetail(props.id, {
+      ...filters.value,
+      departmentPath: filters.value.departmentPath?.length
+        ? [...(filters.value.departmentPath ?? [])]
+        : undefined,
+    })
   } finally {
     loading.value = false
   }
@@ -23,82 +50,237 @@ const handleBack = () => {
   router.push({ name: 'TrainingDashboard' })
 }
 
+const resetFilters = () => {
+  filters.value = {
+    role: '全员',
+    positionMaturity: '全部',
+    departmentPath: [],
+    jobFamily: undefined,
+    jobCategory: undefined,
+    jobSubCategory: undefined,
+  }
+}
+
+const formatBoolean = (value: boolean) => (value ? '是' : '否')
+
+const handleCourseClick = (url: string) => {
+  window.open(url, '_blank')
+}
+
+watch(
+  filters,
+  () => {
+    fetchDetail()
+  },
+  { deep: true }
+)
+
 onMounted(() => {
   fetchDetail()
 })
-
-const executionSteps = [
-  { title: '数据准备', description: '数据清洗 & 样本均衡处理', status: 'finish' },
-  { title: '特征工程', description: '自动特征选择 + Prompt 设计', status: 'finish' },
-  { title: '模型训练', description: 'GPU 集群训练中', status: 'process' },
-  { title: '评估部署', description: '待完成线上评估与版本发布', status: 'wait' },
-]
 </script>
 
 <template>
   <section class="detail-view training-detail">
-    <header class="detail-view__header">
-      <el-button type="primary" text :icon="ArrowLeft" @click="handleBack">返回列表</el-button>
-      <div>
-        <h2>{{ detail?.name ?? '训练任务' }}</h2>
-        <p>掌握训练进度、数据集及操作记录，确保模型持续迭代。</p>
+    <header class="detail-view__header glass-card">
+      <div class="header-left">
+        <el-button type="primary" text :icon="ArrowLeft" @click="handleBack">返回列表页</el-button>
+        <div>
+          <h2>AI 训战看板详情</h2>
+          <p>查看训战数据明细与课程规划，支持多维度筛选，快速定位关键信息。</p>
+        </div>
       </div>
       <el-space>
-        <el-button type="primary" plain>暂停训练</el-button>
-        <el-button type="primary">重新启动</el-button>
+        <el-button type="primary" plain :icon="Refresh" @click="fetchDetail">刷新数据</el-button>
+        <el-button type="primary">导出报表</el-button>
       </el-space>
     </header>
 
-    <el-skeleton :rows="6" animated v-if="loading" />
-    <el-empty v-else-if="!detail" description="未找到对应的训练任务" />
-    <template v-else>
-      <el-descriptions border :column="2" title="任务基础信息" class="detail-block">
-        <el-descriptions-item label="负责人">{{ detail.owner }}</el-descriptions-item>
-        <el-descriptions-item label="最新进度">{{ detail.progress }}%</el-descriptions-item>
-        <el-descriptions-item label="数据集">{{ detail.dataset }}</el-descriptions-item>
-        <el-descriptions-item label="最后更新">{{ detail.updatedAt }}</el-descriptions-item>
-        <el-descriptions-item label="训练状态">{{ detail.status }}</el-descriptions-item>
-        <el-descriptions-item label="版本号">v2.3.5</el-descriptions-item>
-      </el-descriptions>
+    <el-card shadow="hover" class="filter-card">
+      <el-form :inline="true" :model="filters" label-width="90">
+        <el-form-item label="部门筛选">
+          <el-cascader
+            v-model="filters.departmentPath"
+            :options="departmentOptions"
+            :props="cascaderProps"
+            clearable
+            placeholder="可选择至六级部门"
+            separator=" / "
+            style="min-width: 260px"
+          />
+        </el-form-item>
+        <el-form-item label="职位族">
+          <el-select
+            v-model="filters.jobFamily"
+            placeholder="全部"
+            clearable
+            style="width: 160px"
+          >
+            <el-option
+              v-for="family in detailData?.filters.jobFamilies ?? []"
+              :key="family"
+              :label="family"
+              :value="family"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="职位类">
+          <el-select
+            v-model="filters.jobCategory"
+            placeholder="全部"
+            clearable
+            style="width: 160px"
+          >
+            <el-option
+              v-for="category in detailData?.filters.jobCategories ?? []"
+              :key="category"
+              :label="category"
+              :value="category"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="职位子类">
+          <el-select
+            v-model="filters.jobSubCategory"
+            placeholder="全部"
+            clearable
+            style="width: 160px"
+          >
+            <el-option
+              v-for="sub in detailData?.filters.jobSubCategories ?? []"
+              :key="sub"
+              :label="sub"
+              :value="sub"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="角色视图">
+          <el-select v-model="filters.role" placeholder="全员" style="width: 150px">
+            <el-option
+              v-for="role in detailData?.filters.roles ?? []"
+              :key="role.value"
+              :label="role.label"
+              :value="role.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="岗位成熟度">
+          <el-select v-model="filters.positionMaturity" placeholder="全部" style="width: 140px">
+            <el-option
+              v-for="opt in detailData?.filters.maturityOptions ?? []"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button text type="primary" @click="resetFilters">重置筛选</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
 
+    <el-skeleton :rows="8" animated v-if="loading" />
+    <template v-else-if="detailData">
+      <!-- AI训战数据明细 -->
       <el-card shadow="hover" class="detail-block">
         <template #header>
-          <div class="card-header">
-            <h3>训练执行流程</h3>
-            <span>记录从数据准备到模型发布的全过程</span>
-          </div>
+          <h3>AI 训战数据明细</h3>
         </template>
-        <el-steps :active="2" finish-status="success">
-          <el-step
-            v-for="step in executionSteps"
-            :key="step.title"
-            :title="step.title"
-            :description="step.description"
-            :status="step.status as 'wait' | 'process' | 'finish' | 'error' | 'success'"
-          />
-        </el-steps>
+        <el-table
+          :data="detailData.records"
+          border
+          stripe
+          style="width: 100%"
+          max-height="600"
+          highlight-current-row
+        >
+          <el-table-column prop="name" label="姓名" width="100" fixed="left" />
+          <el-table-column prop="employeeId" label="工号" width="120" />
+          <el-table-column prop="jobCategory" label="职位类" width="120" />
+          <el-table-column prop="jobSubCategory" label="职位子类" width="120" />
+          <el-table-column prop="departmentLevel1" label="一级部门" width="120" />
+          <el-table-column prop="departmentLevel2" label="二级部门" width="120" />
+          <el-table-column prop="departmentLevel3" label="三级部门" width="120" />
+          <el-table-column prop="departmentLevel4" label="四级部门" width="120" />
+          <el-table-column prop="departmentLevel5" label="五级部门" width="120" />
+          <el-table-column prop="minDepartment" label="最小部门" width="150" />
+          <el-table-column prop="trainingCategory" label="训战分类" width="120" />
+          <el-table-column prop="courseCategory" label="课程分类" width="120" />
+          <el-table-column prop="courseName" label="课程名称" width="200" />
+          <el-table-column label="是否目标课程" width="130">
+            <template #default="{ row }">
+              <el-tag :type="row.isTargetCourse ? 'success' : 'info'" effect="light">
+                {{ formatBoolean(row.isTargetCourse) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="是否完课" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.isCompleted ? 'success' : 'warning'" effect="light">
+                {{ formatBoolean(row.isCompleted) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="completionDate" label="完课日期" width="120" />
+          <el-table-column label="是否干部" width="100">
+            <template #default="{ row }">
+              {{ formatBoolean(row.isCadre) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="cadreType" label="干部类型" width="120" />
+          <el-table-column label="是否专家" width="100">
+            <template #default="{ row }">
+              {{ formatBoolean(row.isExpert) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="是否基层主管" width="130">
+            <template #default="{ row }">
+              {{ formatBoolean(row.isFrontlineManager) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="organizationMaturity" label="组织AI成熟度" width="150" />
+          <el-table-column prop="positionMaturity" label="岗位AI成熟度" width="150" fixed="right" />
+        </el-table>
       </el-card>
 
+      <!-- 训战课程规划 -->
       <el-card shadow="hover" class="detail-block">
         <template #header>
-          <div class="card-header">
-            <h3>训练日志快照</h3>
-            <el-tag type="primary" effect="plain">近 100 条</el-tag>
-          </div>
+          <h3>训战课程规划</h3>
         </template>
-        <el-timeline>
-          <el-timeline-item timestamp="14:20" type="primary">
-            评估集准确率从 89.6% 提升至 92.4%，F1 值 0.91。
-          </el-timeline-item>
-          <el-timeline-item timestamp="13:45" type="success">
-            自动超参搜索完成，学习率调整为 1e-4。
-          </el-timeline-item>
-          <el-timeline-item timestamp="12:10" type="warning">
-            检测到数据集存在标签噪声，自动触发清洗流程。
-          </el-timeline-item>
-        </el-timeline>
+        <el-table :data="detailData.coursePlans" border stripe style="width: 100%">
+          <el-table-column prop="trainingCategory" label="训战分类" width="120" />
+          <el-table-column prop="courseName" label="课程名称" min-width="200">
+            <template #default="{ row }">
+              <el-link
+                type="primary"
+                :href="row.courseUrl"
+                target="_blank"
+                @click.prevent="handleCourseClick(row.courseUrl)"
+              >
+                {{ row.courseName }}
+              </el-link>
+            </template>
+          </el-table-column>
+          <el-table-column prop="courseCode" label="课程编码" width="120">
+            <template #default="{ row }">
+              <el-link
+                type="primary"
+                :href="row.courseUrl"
+                target="_blank"
+                @click.prevent="handleCourseClick(row.courseUrl)"
+              >
+                {{ row.courseCode }}
+              </el-link>
+            </template>
+          </el-table-column>
+          <el-table-column prop="targetAudience" label="目标人群" width="180" />
+          <el-table-column prop="credits" label="学分" width="100" />
+        </el-table>
       </el-card>
     </template>
+    <el-empty v-else description="暂无详情数据" />
   </section>
 </template>
 
@@ -107,50 +289,59 @@ const executionSteps = [
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
+}
 
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $spacing-lg;
+.glass-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-lg;
+  padding: $spacing-lg;
+  border-radius: $radius-lg;
+  background: linear-gradient(135deg, rgba(7, 116, 221, 0.18), rgba(61, 210, 255, 0.12));
+  box-shadow: 0 18px 40px rgba(7, 116, 221, 0.16);
 
-    h2 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 600;
-    }
-
-    p {
-      margin: $spacing-xs 0 0;
-      color: $text-secondary-color;
-    }
+  h2 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
   }
+
+  p {
+    margin: $spacing-sm 0 0;
+    max-width: 560px;
+    color: rgba(18, 33, 54, 0.78);
+  }
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.filter-card {
+  border: none;
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: $shadow-card;
 }
 
 .detail-block {
   border: none;
   border-radius: $radius-lg;
-  background: #fff;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-md;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: $shadow-card;
 
   h3 {
     margin: 0;
     font-size: 18px;
-  }
-
-  span {
-    color: $text-secondary-color;
-    font-size: 12px;
+    font-weight: 600;
   }
 }
 
 @media (max-width: 768px) {
-  .detail-view__header {
+  .glass-card {
     flex-direction: column;
     align-items: flex-start;
   }

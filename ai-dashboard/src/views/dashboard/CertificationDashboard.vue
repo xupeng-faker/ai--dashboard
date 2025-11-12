@@ -431,6 +431,7 @@ onMounted(() => {
 
 .summary-table-grid {
   margin-top: $spacing-sm;
+  row-gap: $spacing-lg;
 
   :deep(.el-col) {
     display: flex;

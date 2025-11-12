@@ -36,8 +36,8 @@ const handleLogout = () => {
           <span class="logo-dot" />
         </div>
         <div class="title">
-          <h1>AI Enablement Platform</h1>
-          <small>智能赋能运营平台</small>
+          <h1>AI转型IT看板</h1>
+          <small>AI转型IT看板</small>
         </div>
       </div>
       <div class="header-right">
