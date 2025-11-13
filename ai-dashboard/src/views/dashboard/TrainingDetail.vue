@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { fetchTrainingDetail } from '@/api/dashboard'
 import type {
   TrainingDetailData,
@@ -11,7 +11,6 @@ import type {
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
-const route = useRoute()
 const loading = ref(false)
 const detailData = ref<TrainingDetailData | null>(null)
 const filters = ref<TrainingDetailFilters>({
@@ -318,6 +317,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
+  align-items: flex-start;
 }
 
 .filter-card {
@@ -325,6 +325,10 @@ onMounted(() => {
   border-radius: $radius-lg;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: $shadow-card;
+  :deep(.el-form-item) {
+    margin-right: $spacing-md;
+    margin-bottom: $spacing-sm;
+  }
 }
 
 .detail-block {

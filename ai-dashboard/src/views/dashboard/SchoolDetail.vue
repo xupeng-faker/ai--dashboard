@@ -56,7 +56,7 @@ onMounted(() => {
       </el-space>
     </header>
 
-    <el-card shadow="never" class="filter-card" v-if="detailData">
+    <el-card shadow="hover" class="filter-card" v-if="detailData">
       <el-row :gutter="16" align="middle">
         <el-col :xs="24" :sm="12" :md="6">
           <label>部门筛选：</label>
@@ -244,8 +244,9 @@ onMounted(() => {
 
 .header-left {
   display: flex;
-  align-items: center;
-  gap: $spacing-lg;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $spacing-sm;
   flex: 1;
 }
 
@@ -273,6 +274,9 @@ onMounted(() => {
   border-radius: $radius-lg;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: $shadow-card;
+  :deep(.el-row) {
+    row-gap: $spacing-md;
+  }
 
   label {
     display: inline-block;

@@ -110,7 +110,7 @@ onMounted(() => {
   <section class="detail-view cert-detail">
     <header class="detail-view__header glass-card">
       <div class="header-left">
-        <el-button type="primary" text :icon="ArrowLeft" @click="handleBack">返回看板</el-button>
+        <el-button type="primary" text :icon="ArrowLeft" @click="handleBack">返回列表页</el-button>
         <div>
           <h2>{{ detailData?.summary?.name ?? 'AI任职认证详情' }}</h2>
           <p>
@@ -366,6 +366,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
+  align-items: flex-start;
 }
 
 .filter-card {
@@ -373,6 +374,10 @@ onMounted(() => {
   border-radius: $radius-lg;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: $shadow-card;
+  :deep(.el-form-item) {
+    margin-right: $spacing-md;
+    margin-bottom: $spacing-sm;
+  }
 }
 
 .summary-card {
