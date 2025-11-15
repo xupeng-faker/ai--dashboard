@@ -1,18 +1,29 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { fetchSchoolDetailData } from '@/api/dashboard'
+import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import type { SchoolDetailData, SchoolDetailFilters } from '@/types/dashboard'
+import { normalizeRoleOptions } from '@/constants/roles'
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
 const loading = ref(false)
 const detailData = ref<SchoolDetailData | null>(null)
 const filters = ref<SchoolDetailFilters>({
-  role: '全员',
+  role: '0',
   positionMaturity: '全部',
+  departmentPath: [],
 })
+
+const {
+  departmentTree,
+  cascaderProps,
+  initDepartmentTree,
+} = useDepartmentFilter()
+
+const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
 
 const fetchDetail = async () => {
   loading.value = true
@@ -34,6 +45,7 @@ const handleFilterChange = () => {
 const formatPercent = (value: number) => `${value.toFixed(1)}%`
 
 onMounted(() => {
+  initDepartmentTree()
   fetchDetail()
 })
 </script>
@@ -62,8 +74,8 @@ onMounted(() => {
           <label>部门筛选：</label>
           <el-cascader
             v-model="filters.departmentPath"
-            :options="detailData.filters.departmentTree"
-            :props="{ value: 'value', label: 'label', children: 'children', checkStrictly: true, emitPath: true }"
+            :options="departmentTree"
+            :props="cascaderProps"
             placeholder="请选择部门"
             clearable
             @change="handleFilterChange"
@@ -129,12 +141,7 @@ onMounted(() => {
             @change="handleFilterChange"
             style="width: 100%"
           >
-            <el-option
-              v-for="role in detailData.filters.roles"
-              :key="role.value"
-              :label="role.label"
-              :value="role.value"
-            />
+            <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
           </el-select>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">

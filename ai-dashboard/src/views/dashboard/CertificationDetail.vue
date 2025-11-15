@@ -3,10 +3,12 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCertificationDetailData } from '@/api/dashboard'
+import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
+import { normalizeRoleOptions } from '@/constants/roles'
 import type {
   CertificationDetailData,
   CertificationDetailFilters,
-  DepartmentNode,
+  CertificationRole,
 } from '@/types/dashboard'
 
 const props = defineProps<{ id: string }>()
@@ -15,23 +17,23 @@ const route = useRoute()
 const loading = ref(false)
 const detailData = ref<CertificationDetailData | null>(null)
 const activeTab = ref<'certification' | 'appointment'>('certification')
+const ROLE_VALUES: CertificationRole[] = ['0', '1', '2', '3']
+const routeRole = route.query.role as string | undefined
+const normalizedRole: CertificationRole = ROLE_VALUES.includes(routeRole as CertificationRole)
+  ? (routeRole as CertificationRole)
+  : '0'
 const filters = ref<CertificationDetailFilters>({
-  role: (route.query.role as any) ?? '全员',
+  role: normalizedRole,
   maturity: '全部',
   departmentPath: [],
 })
 
-const cascaderProps = computed(() => ({
-  value: 'value',
-  label: 'label',
-  children: 'children',
-  emitPath: true,
-  expandTrigger: 'hover' as const,
-}))
-
-const departmentOptions = computed<DepartmentNode[]>(
-  () => detailData.value?.filters.departmentTree ?? []
-)
+const {
+  departmentTree: departmentOptions,
+  cascaderProps,
+  initDepartmentTree,
+} = useDepartmentFilter()
+const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
 
 const fetchDetail = async () => {
   loading.value = true
@@ -53,7 +55,7 @@ const handleBack = () => {
 
 const resetFilters = () => {
   filters.value = {
-    role: '全员',
+    role: '0',
     maturity: '全部',
     departmentPath: [],
     jobFamily: undefined,
@@ -99,6 +101,7 @@ watch(
 )
 
 onMounted(() => {
+  initDepartmentTree()
   if (route.query.column === 'baseline') {
     activeTab.value = 'certification'
   }
@@ -184,12 +187,7 @@ onMounted(() => {
         </el-form-item>
         <el-form-item label="角色视图">
           <el-select v-model="filters.role" placeholder="全员" style="width: 150px">
-            <el-option
-              v-for="role in detailData?.filters.roles ?? []"
-              :key="role.value"
-              :label="role.label"
-              :value="role.value"
-            />
+            <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="成熟度">

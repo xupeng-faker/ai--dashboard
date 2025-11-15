@@ -3,10 +3,11 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { fetchTrainingDetail } from '@/api/dashboard'
+import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
+import { normalizeRoleOptions } from '@/constants/roles'
 import type {
   TrainingDetailData,
   TrainingDetailFilters,
-  DepartmentNode,
 } from '@/types/dashboard'
 
 const props = defineProps<{ id: string }>()
@@ -14,22 +15,17 @@ const router = useRouter()
 const loading = ref(false)
 const detailData = ref<TrainingDetailData | null>(null)
 const filters = ref<TrainingDetailFilters>({
-  role: '全员',
+  role: '0',
   positionMaturity: '全部',
   departmentPath: [],
 })
 
-const cascaderProps = computed(() => ({
-  value: 'value',
-  label: 'label',
-  children: 'children',
-  emitPath: true,
-  expandTrigger: 'hover' as const,
-}))
-
-const departmentOptions = computed<DepartmentNode[]>(
-  () => detailData.value?.filters.departmentTree ?? []
-)
+const {
+  departmentTree: departmentOptions,
+  cascaderProps,
+  initDepartmentTree,
+} = useDepartmentFilter()
+const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
 
 const fetchDetail = async () => {
   loading.value = true
@@ -51,7 +47,7 @@ const handleBack = () => {
 
 const resetFilters = () => {
   filters.value = {
-    role: '全员',
+    role: '0',
     positionMaturity: '全部',
     departmentPath: [],
     jobFamily: undefined,
@@ -75,6 +71,7 @@ watch(
 )
 
 onMounted(() => {
+  initDepartmentTree()
   fetchDetail()
 })
 </script>
@@ -155,12 +152,7 @@ onMounted(() => {
         </el-form-item>
         <el-form-item label="角色视图">
           <el-select v-model="filters.role" placeholder="全员" style="width: 150px">
-            <el-option
-              v-for="role in detailData?.filters.roles ?? []"
-              :key="role.value"
-              :label="role.label"
-              :value="role.value"
-            />
+            <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="岗位成熟度">

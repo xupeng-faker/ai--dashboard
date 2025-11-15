@@ -3,36 +3,31 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { Medal, RefreshRight } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { fetchCertificationDashboard } from '@/api/dashboard'
+import { normalizeRoleOptions } from '@/constants/roles'
+import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import StatCard from '@/components/common/StatCard.vue'
 import CertificationSummaryTable from '@/components/dashboard/CertificationSummaryTable.vue'
 import BarLineChart from '@/components/dashboard/BarLineChart.vue'
 import type {
   CertificationDashboardData,
   CertificationDashboardFilters,
-  DepartmentNode,
 } from '@/types/dashboard'
 
 const router = useRouter()
 const loading = ref(false)
 const dashboardData = ref<CertificationDashboardData | null>(null)
 const filters = ref<CertificationDashboardFilters>({
-  role: '全员',
+  role: '0',
   departmentPath: [],
 })
 
-const cascaderProps = computed(() => ({
-  value: 'value',
-  label: 'label',
-  children: 'children',
-  expandTrigger: 'hover' as const,
-  emitPath: true,
-}))
+const {
+  departmentTree: departmentOptions,
+  cascaderProps,
+  initDepartmentTree,
+} = useDepartmentFilter()
 
-const departmentOptions = computed<DepartmentNode[]>(
-  () => dashboardData.value?.filters.departmentTree ?? []
-)
-
-const roleOptions = computed(() => dashboardData.value?.filters.roles ?? [])
+const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
 const maturityOptions = computed(() => dashboardData.value?.filters.maturityOptions ?? [])
 
 const fetchData = async () => {
@@ -64,7 +59,7 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
 
 const resetFilters = () => {
   filters.value = {
-    role: '全员',
+    role: '0',
     departmentPath: [],
     maturity: '全部',
   }
@@ -79,6 +74,7 @@ watch(
 )
 
 onMounted(() => {
+  initDepartmentTree()
   fetchData()
 })
 </script>
@@ -108,6 +104,7 @@ onMounted(() => {
             placeholder="可选择至六级部门"
             clearable
             separator=" / "
+            style="width: 260px"
           />
         </el-form-item>
         <el-form-item label="组织成熟度">

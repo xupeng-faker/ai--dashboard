@@ -16,6 +16,8 @@ import {
   ElTableColumn,
 } from 'element-plus'
 import { fetchTrainingDashboard } from '@/api/dashboard'
+import { normalizeRoleOptions } from '@/constants/roles'
+import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 import type {
   TrainingAllStaffSummaryGroup,
   TrainingAllStaffSummaryRow,
@@ -33,11 +35,15 @@ const dashboardData = ref<TrainingDashboardData | null>(null)
 
 const filters = reactive<TrainingDashboardFilters>({
   departmentPath: [],
-  role: '全员',
+  role: '0',
 })
 
-const departmentOptions = computed(() => dashboardData.value?.filters.departmentTree ?? [])
-const roleOptions = computed(() => dashboardData.value?.filters.roles ?? [])
+const {
+  departmentTree: departmentOptions,
+  cascaderProps,
+  initDepartmentTree,
+} = useDepartmentFilter()
+const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
 const planningResources = computed<TrainingPlanningResource[]>(() => dashboardData.value?.planningResources ?? [])
 
 const fetchData = async () => {
@@ -62,7 +68,7 @@ watch(
 )
 
 const resetFilters = () => {
-  filters.role = '全员'
+  filters.role = '0'
   filters.departmentPath = []
 }
 
@@ -123,6 +129,7 @@ const formatPercent = (value: number) => `${(value ?? 0).toFixed(1)}%`
 const formatNumber = (value: number) => (value ?? 0).toFixed(1)
 
 onMounted(() => {
+  initDepartmentTree()
   fetchData()
 })
 
@@ -191,7 +198,7 @@ defineExpose({
           <el-cascader
             v-model="filters.departmentPath"
             :options="departmentOptions"
-            :props="{ value: 'value', label: 'label', children: 'children', checkStrictly: true, emitPath: true }"
+            :props="cascaderProps"
             placeholder="可选择至六级部门"
             clearable
             separator=" / "

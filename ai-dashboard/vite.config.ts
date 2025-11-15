@@ -11,6 +11,14 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  server: {
+    proxy: {
+      '/ai_transform/webapi': {
+        target: 'http://localhost:3800',
+        changeOrigin: true,
+      },
+    },
+  },
   css: {
     preprocessorOptions: {
       scss: {

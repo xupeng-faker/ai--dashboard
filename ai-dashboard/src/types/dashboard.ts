@@ -24,7 +24,9 @@ export interface TrainingTask {
   updatedAt: string
 }
 
-export type TrainingRole = '全员' | '干部' | '专家' | '基层主管'
+export type RoleValue = '0' | '1' | '2' | '3'
+
+export type TrainingRole = RoleValue
 
 export interface TrainingPlanningResource {
   id: string
@@ -211,6 +213,7 @@ export interface DepartmentNode {
   label: string
   value: string
   children?: DepartmentNode[]
+  disabled?: boolean // 是否禁用该节点
 }
 
 export interface ExpertCertificationSummaryRow {
@@ -252,7 +255,7 @@ export interface CadreAppointmentSummaryRow {
   certificationCompliance: number
 }
 
-export type CertificationRole = '全员' | '干部' | '专家' | '基层主管'
+export type CertificationRole = RoleValue
 
 export interface OverallCertificationTrendRow {
   role: CertificationRole
@@ -327,12 +330,25 @@ export interface StaffChartPoint {
   rate: number
 }
 
+export interface DepartmentCertStatistic {
+  deptCode: string
+  deptName: string
+  totalCount: number
+  certifiedCount: number
+  certRate: number
+}
+
+export interface EmployeeCertStatisticsResponse {
+  departmentStatistics: DepartmentCertStatistic[]
+  totalStatistics: DepartmentCertStatistic
+}
+
 export interface SelectOption<T extends string> {
   label: string
   value: T
 }
 
-export type SchoolRole = '全员' | '干部' | '专家' | '基层主管'
+export type SchoolRole = RoleValue
 
 export interface SchoolPersonalOverview {
   targetCredits: number
@@ -505,5 +521,25 @@ export interface CertificationDetailData {
     roles: SelectOption<CertificationRole>[]
     maturityOptions: SelectOption<'全部' | 'L1' | 'L2' | 'L3'>[]
   }
+}
+
+/**
+ * 后端统一响应结果
+ */
+export interface Result<T> {
+  code: number
+  message: string
+  data: T
+}
+
+/**
+ * 部门信息VO（对应后端 DepartmentInfoVO）
+ */
+export interface DepartmentInfoVO {
+  deptCode: string
+  deptName: string
+  deptLevel: string
+  parentDeptCode?: string
+  children?: DepartmentInfoVO[]
 }
 
