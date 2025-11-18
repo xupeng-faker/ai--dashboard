@@ -11,6 +11,7 @@ import BarLineChart from '@/components/dashboard/BarLineChart.vue'
 import type {
   CertificationDashboardData,
   CertificationDashboardFilters,
+  DepartmentCertStatistic,
   StaffChartPoint,
 } from '@/types/dashboard'
 
@@ -31,12 +32,27 @@ const {
 const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
 const maturityOptions = computed(() => dashboardData.value?.filters.maturityOptions ?? [])
 
-const departmentStatistics = computed(() => dashboardData.value?.employeeCertStatistics?.departmentStatistics ?? [])
+const departmentStatistics = computed(
+  () => dashboardData.value?.employeeCertStatistics?.departmentStatistics ?? []
+)
+const resolveAppointmentCount = (item?: DepartmentCertStatistic | null) =>
+  item?.certifiedCount ?? item?.totalCount ?? 0
+const resolveCertificationCount = (item?: DepartmentCertStatistic | null) =>
+  item?.certifiedCount ?? 0
+const resolveQualifiedRate = (item?: DepartmentCertStatistic | null) =>
+  Number(item?.qualifiedRate ?? item?.certRate ?? 0)
 const departmentStatsPoints = computed<StaffChartPoint[]>(() =>
   departmentStatistics.value.map((item) => ({
     label: item.deptName?.trim().length ? item.deptName : item.deptCode,
-    count: item.certifiedCount ?? 0,
-    rate: Number(item.certRate ?? 0),
+    count: resolveAppointmentCount(item),
+    rate: resolveQualifiedRate(item),
+  }))
+)
+const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() =>
+  departmentStatistics.value.map((item) => ({
+    label: item.deptName?.trim().length ? item.deptName : item.deptCode,
+    count: resolveCertificationCount(item),
+    rate: resolveQualifiedRate(item),
   }))
 )
 const hasDepartmentStats = computed(() => departmentStatsPoints.value.length > 0)
@@ -46,14 +62,31 @@ const fallbackDepartmentPoints = computed<StaffChartPoint[]>(
 const departmentChartPoints = computed<StaffChartPoint[]>(() =>
   hasDepartmentStats.value ? departmentStatsPoints.value : fallbackDepartmentPoints.value
 )
-const departmentCountLabel = computed(() => (hasDepartmentStats.value ? '认证人数' : '任职人数'))
+const fallbackDepartmentCertificationPoints = computed<StaffChartPoint[]>(
+  () => dashboardData.value?.allStaff.departmentCertification ?? []
+)
+const departmentCertificationChartPoints = computed<StaffChartPoint[]>(() =>
+  hasDepartmentStats.value
+    ? departmentCertificationStatsPoints.value
+    : fallbackDepartmentCertificationPoints.value
+)
+const departmentCountLabel = computed(() => '任职总人数')
 const departmentLegendTotals = computed<Record<string, string> | undefined>(() => {
   if (!hasDepartmentStats.value) return undefined
   const total = dashboardData.value?.employeeCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
-    [departmentCountLabel.value]: `${total.certifiedCount ?? 0}人`,
-    占比: `${Number(total.certRate ?? 0).toFixed(1)}%`,
+    [departmentCountLabel.value]: `${resolveAppointmentCount(total)}人`,
+    占比: `${resolveQualifiedRate(total).toFixed(1)}%`,
+  }
+})
+const departmentCertificationLegendTotals = computed<Record<string, string> | undefined>(() => {
+  if (!hasDepartmentStats.value) return undefined
+  const total = dashboardData.value?.employeeCertStatistics?.totalStatistics
+  if (!total) return undefined
+  return {
+    认证总人数: `${resolveCertificationCount(total)}人`,
+    占比: `${resolveQualifiedRate(total).toFixed(1)}%`,
   }
 })
 
@@ -362,9 +395,10 @@ onMounted(() => {
           <el-col :xs="24" :lg="12">
             <BarLineChart
               title="部门认证数据"
-              :points="dashboardData.allStaff.departmentCertification"
-              count-label="认证人数"
+              :points="departmentCertificationChartPoints"
+              count-label="认证总人数"
               rate-label="占比"
+              :legend-totals="departmentCertificationLegendTotals"
               :height="320"
             />
           </el-col>

@@ -53,6 +53,11 @@ const mapDepartmentCertStatsToCharts = (stats?: DepartmentCertStatistic[]) => {
     return null
   }
 
+  const resolveQualifiedCount = (item: DepartmentCertStatistic) =>
+    item.qualifiedCount ?? item.certifiedCount ?? 0
+  const resolveQualifiedRate = (item: DepartmentCertStatistic) =>
+    Number(item.qualifiedRate ?? item.certRate ?? 0)
+
   const normalizeLabel = (name?: string, code?: string) => {
     if (name && name.trim().length) {
       return name
@@ -71,8 +76,8 @@ const mapDepartmentCertStatsToCharts = (stats?: DepartmentCertStatistic[]) => {
     })),
     certification: stats.map((item) => ({
       label: normalizeLabel(item.deptName, item.deptCode),
-      count: item.certifiedCount ?? 0,
-      rate: Number(item.certRate ?? 0),
+      count: resolveQualifiedCount(item),
+      rate: resolveQualifiedRate(item),
     })),
   }
 }

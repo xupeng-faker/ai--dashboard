@@ -336,6 +336,8 @@ export interface DepartmentCertStatistic {
   totalCount: number
   certifiedCount: number
   certRate: number
+  qualifiedCount?: number
+  qualifiedRate?: number
 }
 
 export interface EmployeeCertStatisticsResponse {
