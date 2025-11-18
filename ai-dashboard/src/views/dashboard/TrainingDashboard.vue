@@ -1,20 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  ElButton,
-  ElCard,
-  ElCascader,
-  ElEmpty,
-  ElForm,
-  ElFormItem,
-  ElLink,
-  ElSelect,
-  ElSkeleton,
-  ElSpace,
-  ElTable,
-  ElTableColumn,
-} from 'element-plus'
+import { ElButton, ElCard, ElCascader, ElEmpty, ElForm, ElFormItem, ElLink, ElSelect, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
 import { fetchTrainingDashboard } from '@/api/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
@@ -160,10 +147,6 @@ defineExpose({
           聚焦专家、干部与全员的训战执行态势，通过部门与角色筛选快速定位短板，支持关键指标下钻查看详情。
         </p>
       </div>
-      <el-space :size="12">
-        <el-button type="primary" plain @click="fetchData">刷新数据</el-button>
-        <el-button type="primary">导出报告</el-button>
-      </el-space>
     </header>
 
     <el-card shadow="hover" class="resource-card">

@@ -173,12 +173,6 @@ export const fetchCertificationDashboard = async (
         { label: '专家', value: '2' },
         { label: '基层主管', value: '3' },
       ],
-      maturityOptions: [
-        { label: '全部', value: '全部' },
-        { label: 'L1', value: 'L1' },
-        { label: 'L2', value: 'L2' },
-        { label: 'L3', value: 'L3' },
-      ],
     },
   }
 }

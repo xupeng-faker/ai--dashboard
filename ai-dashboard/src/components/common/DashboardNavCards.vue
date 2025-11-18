@@ -43,7 +43,11 @@ const goToDashboard = (name: DashboardTabName) => {
             {{ card.label }}
             <el-tag v-if="card.badge" size="small" effect="plain">{{ card.badge }}</el-tag>
           </span>
-          <span class="capsule__action" :class="{ 'is-active': activeTab === card.name }">
+          <span
+            v-if="card.name !== 'maturity'"
+            class="capsule__action"
+            :class="{ 'is-active': activeTab === card.name }"
+          >
             {{ activeTab === card.name ? '当前' : '进入' }}
           </span>
         </button>
@@ -68,14 +72,15 @@ const goToDashboard = (name: DashboardTabName) => {
 }
 
 .nav-capsules__list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: $spacing-md;
+  width: 100%;
 }
 
 .capsule {
-  flex: 1;
-  min-width: 190px;
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: $spacing-sm;
@@ -116,6 +121,7 @@ const goToDashboard = (name: DashboardTabName) => {
     display: inline-flex;
     align-items: center;
     gap: $spacing-xs;
+    white-space: nowrap;
     font-size: 14px;
     font-weight: 600;
     color: #1b2533;

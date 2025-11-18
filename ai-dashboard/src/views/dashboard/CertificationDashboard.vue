@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { Medal, RefreshRight } from '@element-plus/icons-vue'
+import { Medal } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { fetchCertificationDashboard } from '@/api/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
@@ -30,28 +30,28 @@ const {
 } = useDepartmentFilter()
 
 const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
-const maturityOptions = computed(() => dashboardData.value?.filters.maturityOptions ?? [])
-
 const departmentStatistics = computed(
   () => dashboardData.value?.employeeCertStatistics?.departmentStatistics ?? []
 )
-const resolveAppointmentCount = (item?: DepartmentCertStatistic | null) =>
-  item?.certifiedCount ?? item?.totalCount ?? 0
+const resolveQualifiedCount = (item?: DepartmentCertStatistic | null) =>
+  item?.qualifiedCount ?? 0
 const resolveCertificationCount = (item?: DepartmentCertStatistic | null) =>
   item?.certifiedCount ?? 0
+const resolveCertificationRate = (item?: DepartmentCertStatistic | null) =>
+  Number(item?.certRate ?? 0)
 const resolveQualifiedRate = (item?: DepartmentCertStatistic | null) =>
-  Number(item?.qualifiedRate ?? item?.certRate ?? 0)
+  Number(item?.qualifiedRate ?? 0)
 const departmentStatsPoints = computed<StaffChartPoint[]>(() =>
   departmentStatistics.value.map((item) => ({
     label: item.deptName?.trim().length ? item.deptName : item.deptCode,
-    count: resolveAppointmentCount(item),
-    rate: resolveQualifiedRate(item),
+    count: resolveCertificationCount(item),
+    rate: resolveCertificationRate(item),
   }))
 )
 const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() =>
   departmentStatistics.value.map((item) => ({
     label: item.deptName?.trim().length ? item.deptName : item.deptCode,
-    count: resolveCertificationCount(item),
+    count: resolveQualifiedCount(item),
     rate: resolveQualifiedRate(item),
   }))
 )
@@ -76,8 +76,8 @@ const departmentLegendTotals = computed<Record<string, string> | undefined>(() =
   const total = dashboardData.value?.employeeCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
-    [departmentCountLabel.value]: `${resolveAppointmentCount(total)}人`,
-    占比: `${resolveQualifiedRate(total).toFixed(1)}%`,
+    [departmentCountLabel.value]: `${resolveCertificationCount(total)}人`,
+    占比: `${resolveCertificationRate(total)}%`,
   }
 })
 const departmentCertificationLegendTotals = computed<Record<string, string> | undefined>(() => {
@@ -85,8 +85,8 @@ const departmentCertificationLegendTotals = computed<Record<string, string> | un
   const total = dashboardData.value?.employeeCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
-    认证总人数: `${resolveCertificationCount(total)}人`,
-    占比: `${resolveQualifiedRate(total).toFixed(1)}%`,
+    认证总人数: `${resolveQualifiedCount(total)}人`,
+    占比: `${resolveQualifiedRate(total)}%`,
   }
 })
 
@@ -121,7 +121,6 @@ const resetFilters = () => {
   filters.value = {
     role: '0',
     departmentPath: [],
-    maturity: '全部',
   }
 }
 
@@ -148,10 +147,6 @@ onMounted(() => {
           覆盖专家、干部与全员多维度的任职与认证进度，支持六级部门级联筛选，帮助快速识别薄弱环节与提升方向。
         </p>
       </div>
-      <el-space :size="12">
-        <el-button type="primary" plain :icon="RefreshRight" @click="fetchData">刷新数据</el-button>
-        <el-button type="primary">导出报告</el-button>
-      </el-space>
     </header>
 
     <el-card shadow="hover" class="filter-card">
@@ -166,11 +161,6 @@ onMounted(() => {
             separator=" / "
             style="width: 260px"
           />
-        </el-form-item>
-        <el-form-item label="组织成熟度">
-          <el-select v-model="filters.maturity" placeholder="全部" clearable style="width: 160px">
-            <el-option v-for="opt in maturityOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-          </el-select>
         </el-form-item>
         <el-form-item label="角色视图">
           <el-select v-model="filters.role" placeholder="全员" style="width: 160px">
@@ -201,7 +191,7 @@ onMounted(() => {
       <el-row :gutter="16" class="summary-table-grid">
         <el-col :xs="24" :lg="12">
           <CertificationSummaryTable
-            title="专家AI任职认证数据表格1"
+            title="专家AI认证数据"
             :columns="[
               { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
               { prop: 'jobCategory', label: '职位类', width: 140 },
@@ -232,7 +222,7 @@ onMounted(() => {
         </el-col>
         <el-col :xs="24" :lg="12">
           <CertificationSummaryTable
-            title="专家AI任职认证数据表格2"
+            title="专家AI任职数据"
             :columns="[
               { prop: 'maturityLevel', label: '专家岗位AI成熟度评估', width: 180 },
               { prop: 'jobCategory', label: '职位类', width: 140 },
@@ -276,7 +266,7 @@ onMounted(() => {
         </el-col>
         <el-col :xs="24" :lg="12">
           <CertificationSummaryTable
-            title="干部AI任职认证数据表格1"
+            title="干部AI认证数据"
             :columns="[
               { prop: 'maturityLevel', label: '干部岗位AI成熟度评估', width: 180 },
               { prop: 'jobCategory', label: '职位类', width: 140 },
@@ -325,7 +315,7 @@ onMounted(() => {
         </el-col>
         <el-col :xs="24" :lg="12">
           <CertificationSummaryTable
-            title="干部AI任职认证数据表格2"
+            title="干部AI任职数据"
             :columns="[
               { prop: 'maturityLevel', label: '干部岗位AI成熟度评估', width: 180 },
               { prop: 'jobCategory', label: '职位类', width: 140 },

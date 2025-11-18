@@ -478,7 +478,6 @@ export interface SchoolDetailFilters {
 export interface CertificationDashboardFilters {
   departmentPath?: string[]
   role?: CertificationRole
-  maturity?: '全部' | 'L1' | 'L2' | 'L3'
 }
 
 export interface CertificationDashboardData {
@@ -499,7 +498,6 @@ export interface CertificationDashboardData {
   filters: {
     departmentTree: DepartmentNode[]
     roles: SelectOption<CertificationRole>[]
-    maturityOptions: SelectOption<'全部' | 'L1' | 'L2' | 'L3'>[]
   }
 }
 

@@ -1,22 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  ElButton,
-  ElCard,
-  ElCascader,
-  ElCol,
-  ElForm,
-  ElFormItem,
-  ElLink,
-  ElRow,
-  ElSelect,
-  ElSkeleton,
-  ElSpace,
-  ElTable,
-  ElTableColumn,
-  ElTag,
-} from 'element-plus'
+import { ElButton, ElCard, ElCascader, ElCol, ElForm, ElFormItem, ElLink, ElRow, ElSelect, ElSkeleton, ElTable, ElTableColumn, ElTag } from 'element-plus'
 import { fetchSchoolDashboard } from '@/api/dashboard'
 import { normalizeRoleOptions } from '@/constants/roles'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
@@ -172,10 +157,6 @@ onMounted(() => {
           覆盖专家、干部与全员多维度的学分达成态势，结合部门筛选快速定位薄弱环节，支持下钻查看详情。
         </p>
       </div>
-      <el-space :size="12">
-        <el-button type="primary" plain @click="fetchData">刷新数据</el-button>
-        <el-button type="primary">导出报告</el-button>
-      </el-space>
     </header>
 
     <el-card shadow="hover" class="resource-card">
