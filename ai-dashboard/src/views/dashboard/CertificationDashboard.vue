@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { Medal } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { fetchCertificationDashboard } from '@/api/dashboard'
@@ -27,6 +27,7 @@ const {
   departmentTree: departmentOptions,
   cascaderProps,
   initDepartmentTree,
+  refreshDepartmentTree,
 } = useDepartmentFilter()
 
 const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
@@ -134,6 +135,11 @@ watch(
 
 onMounted(() => {
   initDepartmentTree()
+  fetchData()
+})
+
+onActivated(() => {
+  refreshDepartmentTree()
   fetchData()
 })
 </script>
@@ -447,17 +453,18 @@ onMounted(() => {
   background: linear-gradient(135deg, rgba(58, 122, 254, 0.18), rgba(155, 92, 255, 0.16));
   box-shadow: 0 18px 45px rgba(58, 122, 254, 0.12);
   padding: $spacing-lg;
-  color: #fff;
+  color: #000;
 
   h2 {
     margin: 0;
     font-size: 26px;
     font-weight: 700;
+    color: #000;
   }
 
   p {
     margin: $spacing-sm 0 0;
-    color: rgba(255, 255, 255, 0.86);
+    color: #000;
     max-width: 600px;
     line-height: 1.6;
   }

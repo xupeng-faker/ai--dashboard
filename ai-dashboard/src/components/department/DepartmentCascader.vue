@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onActivated, watch } from 'vue'
 import { useDepartmentFilter } from '@/composables/useDepartmentFilter'
 
 interface Props {
@@ -36,11 +36,16 @@ const {
   departmentTree,
   selectedDepartmentPath,
   initDepartmentTree,
+  refreshDepartmentTree,
   cascaderProps,
 } = useDepartmentFilter()
 
 // 初始化部门树（加载一级和二级部门作为默认值）
 initDepartmentTree()
+
+onActivated(() => {
+  refreshDepartmentTree()
+})
 
 // 同步外部传入的值
 const selectedPath = computed({

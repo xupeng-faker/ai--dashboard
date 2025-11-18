@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElButton, ElCard, ElCascader, ElEmpty, ElForm, ElFormItem, ElLink, ElSelect, ElSkeleton, ElTable, ElTableColumn } from 'element-plus'
 import { fetchTrainingDashboard } from '@/api/dashboard'
@@ -29,6 +29,7 @@ const {
   departmentTree: departmentOptions,
   cascaderProps,
   initDepartmentTree,
+  refreshDepartmentTree,
 } = useDepartmentFilter()
 const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
 const planningResources = computed<TrainingPlanningResource[]>(() => dashboardData.value?.planningResources ?? [])
@@ -117,6 +118,11 @@ const formatNumber = (value: number) => (value ?? 0).toFixed(1)
 
 onMounted(() => {
   initDepartmentTree()
+  fetchData()
+})
+
+onActivated(() => {
+  refreshDepartmentTree()
   fetchData()
 })
 
@@ -593,7 +599,7 @@ defineExpose({
   background: linear-gradient(135deg, rgba(58, 122, 254, 0.18), rgba(14, 170, 194, 0.16));
   box-shadow: 0 18px 45px rgba(58, 122, 254, 0.12);
   padding: $spacing-lg;
-  color: #fff;
+  color: #000;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -603,11 +609,12 @@ defineExpose({
       margin: 0;
     font-size: 26px;
     font-weight: 700;
+    color: #000;
   }
 
   p {
     margin: $spacing-sm 0 0;
-    color: rgba(255, 255, 255, 0.86);
+    color: #000;
     line-height: 1.6;
     max-width: 720px;
   }

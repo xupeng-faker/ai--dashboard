@@ -346,17 +346,19 @@ onMounted(() => {
   border-radius: $radius-lg;
   background: linear-gradient(135deg, rgba(7, 116, 221, 0.18), rgba(61, 210, 255, 0.12));
   box-shadow: 0 18px 40px rgba(7, 116, 221, 0.16);
+  color: #000;
 
   h2 {
     margin: 0;
     font-size: 26px;
     font-weight: 700;
+    color: #000;
   }
 
   p {
     margin: $spacing-sm 0 0;
     max-width: 560px;
-    color: rgba(18, 33, 54, 0.78);
+    color: #000;
   }
 }
 

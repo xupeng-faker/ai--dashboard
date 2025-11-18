@@ -8,8 +8,43 @@ import { fetchDepartmentChildren } from '../api/dashboard'
  */
 export function useDepartmentFilter() {
   const loading = ref(false)
-  const departmentTree = ref<DepartmentNode[]>([])
+  const departmentTree = ref<DepartmentNode[]>([
+    {
+      label: 'ICT BG',
+      value: 'ICT_BG',
+      disabled: true,
+      children: [
+        {
+          label: '云核心网产品线',
+          value: 'CLOUD_CORE_NETWORK',
+          disabled: true,
+          children: [],
+        },
+      ],
+    },
+  ])
   const selectedDepartmentPath = ref<string[]>([])
+
+  const buildDefaultDepartmentTree = (): DepartmentNode[] => [
+    {
+      label: 'ICT BG',
+      value: 'ICT_BG',
+      disabled: true,
+      children: [
+        {
+          label: '云核心网产品线',
+          value: 'CLOUD_CORE_NETWORK',
+          disabled: true,
+          children: [],
+        },
+      ],
+    },
+  ]
+
+  const clearDepartmentState = () => {
+    departmentTree.value = buildDefaultDepartmentTree()
+    selectedDepartmentPath.value = []
+  }
 
   /**
    * 将 DepartmentInfoVO 转换为 DepartmentNode
@@ -114,27 +149,7 @@ export function useDepartmentFilter() {
     try {
       loading.value = true
       
-      // 一级部门：ICT BG（写死，不可选择）
-      // 二级部门：云核心网产品线（写死，不可选择）
-      const level1DeptCode = 'ICT_BG' // 一级部门编码
-      const level2DeptCode = 'CLOUD_CORE_NETWORK' // 二级部门编码
-      
-      // 初始化部门树结构（一级和二级部门写死，并标记为禁用）
-      departmentTree.value = [
-        {
-          label: 'ICT BG',
-          value: level1DeptCode,
-          disabled: true, // 一级部门不可选择
-          children: [
-            {
-              label: '云核心网产品线',
-              value: level2DeptCode,
-              disabled: true, // 二级部门不可选择
-              children: [], // 三级及以下部门通过懒加载获取
-            },
-          ],
-        },
-      ]
+      departmentTree.value = buildDefaultDepartmentTree()
       
       // 三级部门默认通过 deptId=0 查询
       try {
@@ -148,25 +163,15 @@ export function useDepartmentFilter() {
       }
     } catch (error) {
       console.error('初始化部门树失败:', error)
-      // 即使出错，也保留一级和二级部门的写死值
-      departmentTree.value = [
-        {
-          label: 'ICT BG',
-          value: 'ICT_BG',
-          disabled: true,
-          children: [
-            {
-              label: '云核心网产品线',
-              value: 'CLOUD_CORE_NETWORK',
-              disabled: true,
-              children: [],
-            },
-          ],
-        },
-      ]
+      departmentTree.value = buildDefaultDepartmentTree()
     } finally {
       loading.value = false
     }
+  }
+
+  const refreshDepartmentTree = async () => {
+    clearDepartmentState()
+    await initDepartmentTree()
   }
 
   /**
@@ -221,6 +226,8 @@ export function useDepartmentFilter() {
     initDepartmentTree,
     getLevel3Departments,
     resetFilter,
+    clearDepartmentState,
+    refreshDepartmentTree,
     cascaderProps,
   }
 }
