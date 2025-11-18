@@ -11,6 +11,7 @@ import BarLineChart from '@/components/dashboard/BarLineChart.vue'
 import type {
   CertificationDashboardData,
   CertificationDashboardFilters,
+  StaffChartPoint,
 } from '@/types/dashboard'
 
 const router = useRouter()
@@ -29,6 +30,32 @@ const {
 
 const roleOptions = computed(() => normalizeRoleOptions(dashboardData.value?.filters.roles ?? []))
 const maturityOptions = computed(() => dashboardData.value?.filters.maturityOptions ?? [])
+
+const departmentStatistics = computed(() => dashboardData.value?.employeeCertStatistics?.departmentStatistics ?? [])
+const departmentStatsPoints = computed<StaffChartPoint[]>(() =>
+  departmentStatistics.value.map((item) => ({
+    label: item.deptName?.trim().length ? item.deptName : item.deptCode,
+    count: item.certifiedCount ?? 0,
+    rate: Number(item.certRate ?? 0),
+  }))
+)
+const hasDepartmentStats = computed(() => departmentStatsPoints.value.length > 0)
+const fallbackDepartmentPoints = computed<StaffChartPoint[]>(
+  () => dashboardData.value?.allStaff.departmentAppointment ?? []
+)
+const departmentChartPoints = computed<StaffChartPoint[]>(() =>
+  hasDepartmentStats.value ? departmentStatsPoints.value : fallbackDepartmentPoints.value
+)
+const departmentCountLabel = computed(() => (hasDepartmentStats.value ? '认证人数' : '任职人数'))
+const departmentLegendTotals = computed<Record<string, string> | undefined>(() => {
+  if (!hasDepartmentStats.value) return undefined
+  const total = dashboardData.value?.employeeCertStatistics?.totalStatistics
+  if (!total) return undefined
+  return {
+    [departmentCountLabel.value]: `${total.certifiedCount ?? 0}人`,
+    占比: `${Number(total.certRate ?? 0).toFixed(1)}%`,
+  }
+})
 
 const fetchData = async () => {
   loading.value = true
@@ -325,8 +352,18 @@ onMounted(() => {
           <el-col :xs="24" :lg="12">
             <BarLineChart
               title="部门任职数据"
-              :points="dashboardData.allStaff.departmentAppointment"
-              count-label="任职人数"
+              :points="departmentChartPoints"
+              :count-label="departmentCountLabel"
+              rate-label="占比"
+              :legend-totals="departmentLegendTotals"
+              :height="320"
+            />
+          </el-col>
+          <el-col :xs="24" :lg="12">
+            <BarLineChart
+              title="部门认证数据"
+              :points="dashboardData.allStaff.departmentCertification"
+              count-label="认证人数"
               rate-label="占比"
               :height="320"
             />
@@ -342,27 +379,18 @@ onMounted(() => {
           </el-col>
           <el-col :xs="24" :lg="12">
             <BarLineChart
-              title="职位类任职数据"
-              :points="dashboardData.allStaff.jobCategoryAppointment"
-              count-label="任职人数"
-              rate-label="占比"
-              :height="320"
-            />
-          </el-col>
-          <el-col :xs="24" :lg="12">
-            <BarLineChart
-              title="部门认证数据"
-              :points="dashboardData.allStaff.departmentCertification"
-              count-label="认证人数"
-              rate-label="占比"
-              :height="320"
-            />
-          </el-col>
-          <el-col :xs="24" :lg="12">
-            <BarLineChart
               title="组织AI成熟度认证数据"
               :points="dashboardData.allStaff.organizationCertification"
               count-label="认证人数"
+              rate-label="占比"
+              :height="320"
+            />
+          </el-col>
+          <el-col :xs="24" :lg="12">
+            <BarLineChart
+              title="职位类任职数据"
+              :points="dashboardData.allStaff.jobCategoryAppointment"
+              count-label="任职人数"
               rate-label="占比"
               :height="320"
             />

@@ -493,6 +493,7 @@ export interface CertificationDashboardData {
     organizationCertification: StaffChartPoint[]
     jobCategoryCertification: StaffChartPoint[]
   }
+  employeeCertStatistics?: EmployeeCertStatisticsResponse | null
   filters: {
     departmentTree: DepartmentNode[]
     roles: SelectOption<CertificationRole>[]

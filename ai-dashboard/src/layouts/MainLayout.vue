@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { Bell, Setting, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
+import DashboardNavCards from '@/components/common/DashboardNavCards.vue'
 import { useAppStore } from '@/stores/modules/app'
 
 const router = useRouter()
@@ -10,6 +11,8 @@ const route = useRoute()
 const appStore = useAppStore()
 
 const isDashboard = computed(() => route.path.startsWith('/dashboard'))
+// 顶部用户信息显示开关，用户接口未就绪时关闭
+const showUserInfo = false
 
 const handleGoHome = () => {
   router.push({ name: 'Home' })
@@ -48,7 +51,7 @@ const handleLogout = () => {
           <el-tooltip content="系统设置" placement="bottom">
             <el-button circle text :icon="Setting" @click="handleSetting" />
           </el-tooltip>
-          <el-dropdown>
+          <el-dropdown v-if="showUserInfo">
             <span class="user-entry">
               <el-avatar :icon="User" :size="36" class="user-avatar" />
               <div class="user-info">
@@ -67,6 +70,7 @@ const handleLogout = () => {
       </div>
     </el-header>
     <el-main class="layout-main main-content" :class="{ 'is-dashboard': isDashboard }">
+      <DashboardNavCards v-if="isDashboard" />
       <slot />
     </el-main>
   </el-container>

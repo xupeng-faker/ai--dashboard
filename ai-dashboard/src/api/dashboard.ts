@@ -273,6 +273,7 @@ export const fetchCertificationDashboard = async (
       organizationCertification: allStaffData.organizationCertification,
       jobCategoryCertification: allStaffData.jobCategoryCertification,
     },
+    employeeCertStatistics: employeeCertStats ?? null,
     filters: {
       departmentTree: deptTree,
       roles: [

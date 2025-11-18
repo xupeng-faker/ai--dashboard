@@ -22,6 +22,7 @@ interface Props {
   countLabel?: string
   rateLabel?: string
   height?: number
+  legendTotals?: Record<string, string | number>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -29,6 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
   countLabel: '人数',
   rateLabel: '占比',
   height: 280,
+  legendTotals: () => ({}),
 })
 
 type ChartInstance = ReturnType<typeof echarts.init>
@@ -123,6 +125,13 @@ const getOption = (): EChartsOption => {
         color: 'rgba(31, 45, 61, 0.78)',
         fontSize: 12,
       },
+      formatter: (name: string) => {
+        const total = props.legendTotals?.[name]
+        if (total === undefined || total === null || total === '') {
+          return name
+        }
+        return `${name}（${total}）`
+      },
     },
     tooltip: {
       trigger: 'axis',
@@ -187,7 +196,7 @@ const renderChart = () => {
 }
 
 watch(
-  () => [props.points, props.showRate, props.countLabel, props.rateLabel],
+  () => [props.points, props.showRate, props.countLabel, props.rateLabel, props.legendTotals],
   () => {
     nextTick(() => {
       if (props.points.length) {
