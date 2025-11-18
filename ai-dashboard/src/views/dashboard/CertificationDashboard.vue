@@ -382,7 +382,7 @@ onMounted(() => {
           </div>
         </template>
         <el-row :gutter="16">
-          <el-col :xs="24" :lg="12">
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
             <BarLineChart
               title="部门任职数据"
               :points="departmentChartPoints"
@@ -392,7 +392,7 @@ onMounted(() => {
               :height="320"
             />
           </el-col>
-          <el-col :xs="24" :lg="12">
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
             <BarLineChart
               title="部门认证数据"
               :points="departmentCertificationChartPoints"
@@ -402,7 +402,7 @@ onMounted(() => {
               :height="320"
             />
           </el-col>
-          <el-col :xs="24" :lg="12">
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
             <BarLineChart
               title="组织AI成熟度任职数据"
               :points="dashboardData.allStaff.organizationAppointment"
@@ -411,7 +411,7 @@ onMounted(() => {
               :height="320"
             />
           </el-col>
-          <el-col :xs="24" :lg="12">
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
             <BarLineChart
               title="组织AI成熟度认证数据"
               :points="dashboardData.allStaff.organizationCertification"
@@ -420,7 +420,7 @@ onMounted(() => {
               :height="320"
             />
           </el-col>
-          <el-col :xs="24" :lg="12">
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
             <BarLineChart
               title="职位类任职数据"
               :points="dashboardData.allStaff.jobCategoryAppointment"
@@ -429,7 +429,7 @@ onMounted(() => {
               :height="320"
             />
           </el-col>
-          <el-col :xs="24" :lg="12">
+          <el-col :xs="24" :sm="24" :md="24" :lg="24">
             <BarLineChart
               title="职位类认证数据"
               :points="dashboardData.allStaff.jobCategoryCertification"
