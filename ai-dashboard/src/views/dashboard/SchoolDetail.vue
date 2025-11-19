@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onActivated, onMounted, ref } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { fetchSchoolDetailData } from '@/api/dashboard'
@@ -21,6 +21,7 @@ const {
   departmentTree,
   cascaderProps,
   initDepartmentTree,
+  refreshDepartmentTree,
 } = useDepartmentFilter()
 
 const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
@@ -46,6 +47,11 @@ const formatPercent = (value: number) => `${value.toFixed(1)}%`
 
 onMounted(() => {
   initDepartmentTree()
+  fetchDetail()
+})
+
+onActivated(() => {
+  refreshDepartmentTree()
   fetchDetail()
 })
 </script>

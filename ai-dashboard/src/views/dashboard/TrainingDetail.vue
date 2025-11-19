@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { fetchTrainingDetail } from '@/api/dashboard'
@@ -24,6 +24,7 @@ const {
   departmentTree: departmentOptions,
   cascaderProps,
   initDepartmentTree,
+  refreshDepartmentTree,
 } = useDepartmentFilter()
 const roleOptions = computed(() => normalizeRoleOptions(detailData.value?.filters.roles ?? []))
 
@@ -72,6 +73,11 @@ watch(
 
 onMounted(() => {
   initDepartmentTree()
+  fetchDetail()
+})
+
+onActivated(() => {
+  refreshDepartmentTree()
   fetchDetail()
 })
 </script>

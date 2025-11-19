@@ -60,12 +60,14 @@ const getOption = (): EChartsOption => {
   const counts = props.points.map((item) => item.count)
   const rates = props.points.map((item) => item.rate)
   const longestLabelLength = categories.reduce((max, label) => Math.max(max, label.length), 0)
-  const shouldRotateLabels = longestLabelLength > 5 || categories.length > 5
-  const axisLabelRotate = shouldRotateLabels ? -40 : 0
-  const axisLabelMargin = shouldRotateLabels ? 26 : 16
+  const shouldWrapLabels = longestLabelLength > 3
+  const maxCharsPerLine = 3
+  const axisLabelMargin = 8
   const fontSize = 12
-  const estimatedLabelHeight = shouldRotateLabels ? fontSize * Math.SQRT2 : fontSize
-  const gridBottom = Math.max(36, Math.ceil(estimatedLabelHeight + axisLabelMargin + 22))
+  const lineHeight = fontSize * 1.2
+  const estimatedLines = shouldWrapLabels ? Math.ceil(longestLabelLength / maxCharsPerLine) : 1
+  const estimatedLabelHeight = estimatedLines * lineHeight
+  const gridBottom = Math.max(30, Math.ceil(estimatedLabelHeight + axisLabelMargin + 16))
 
   const series: EChartsOption['series'] = [
     {
@@ -162,12 +164,22 @@ const getOption = (): EChartsOption => {
       axisTick: { show: false },
       axisLabel: {
         color: 'rgba(31, 45, 61, 0.65)',
-        rotate: axisLabelRotate,
+        rotate: 0,
         interval: 0,
         fontSize: fontSize,
         margin: axisLabelMargin,
-        align: shouldRotateLabels ? 'right' : 'center',
-        verticalAlign: shouldRotateLabels ? 'middle' : 'top',
+        align: 'center',
+        verticalAlign: 'top',
+        formatter: (value: string) => {
+          if (!shouldWrapLabels || value.length <= maxCharsPerLine) {
+            return value
+          }
+          const lines: string[] = []
+          for (let i = 0; i < value.length; i += maxCharsPerLine) {
+            lines.push(value.slice(i, i + maxCharsPerLine))
+          }
+          return lines.join('\n')
+        },
       },
     },
     yAxis: [

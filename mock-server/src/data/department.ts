@@ -6,7 +6,7 @@ const departmentStore: DepartmentStore = {
   '0': [
     {
       deptCode: 'dept-ict-core-ops',
-      deptName: '云核心网运营部',
+      deptName: '云核心网运营部云核心网运营部云核心网运营',
       deptLevel: '3',
       parentDeptCode: 'CLOUD_CORE_NETWORK',
     },
