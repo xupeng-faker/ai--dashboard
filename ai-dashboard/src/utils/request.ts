@@ -71,7 +71,7 @@ class Request {
   }
 }
 
-export const request = new Request(import.meta.env.VITE_API_BASE_URL ?? '/api')
+export const request = new Request('/ai_transform_webapi')
 
 export const get = <T>(url: string, options?: RequestOptions) => request.request<T>(url, { ...options, method: 'GET' })
 

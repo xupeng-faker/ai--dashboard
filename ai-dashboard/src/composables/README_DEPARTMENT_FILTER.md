@@ -14,7 +14,7 @@
 
 ### 接口地址
 ```
-GET /ai_transform/webapi/department-info/children?deptId={deptId}
+GET /ai_transform_webapi/department-info/children?deptId={deptId}
 ```
 
 ### 请求参数
@@ -127,7 +127,7 @@ const handleDepartmentChange = (value: string[]) => {
 
 ## 注意事项
 
-1. 确保后端接口 `/ai_transform/webapi/department-info/children` 可正常访问
+1. 确保后端接口 `/ai_transform_webapi/department-info/children` 可正常访问
 2. 接口返回的数据格式需要符合 `DepartmentInfoVO` 结构
 3. 当 `deptId` 为空或"0"时，后端会使用默认值"031562"查询一级部门
 

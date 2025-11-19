@@ -13,7 +13,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/ai_transform/webapi': {
+      '/ai_transform_webapi': {
         target: 'http://localhost:3800',
         changeOrigin: true,
       },

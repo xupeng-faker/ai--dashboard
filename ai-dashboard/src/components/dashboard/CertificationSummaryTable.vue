@@ -90,10 +90,11 @@ const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
         v-for="col in columns"
         :key="col.prop"
         :prop="col.prop"
-        :label="col.label"
-        :width="col.width"
-        :min-width="col.width ? undefined : 120"
+        :min-width="col.width || 120"
       >
+        <template #header>
+          <span style="white-space: normal; word-break: break-word; line-height: 1.4;">{{ col.label }}</span>
+        </template>
         <template #default="{ row }">
           <el-link
             v-if="col.clickable"
@@ -143,6 +144,19 @@ const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
     flex: 1;
     --el-table-border-color: rgba(47, 59, 82, 0.08);
     --el-table-row-hover-bg-color: rgba(58, 122, 254, 0.08);
+  }
+
+  :deep(.el-table__header-wrapper) {
+    .el-table__header {
+      th {
+        .cell {
+          white-space: normal;
+          word-break: break-word;
+          line-height: 1.4;
+          padding: 8px 0;
+        }
+      }
+    }
   }
 
   :deep(.row-even) {

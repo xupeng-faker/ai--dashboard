@@ -60,8 +60,8 @@ const getOption = (): EChartsOption => {
   const counts = props.points.map((item) => item.count)
   const rates = props.points.map((item) => item.rate)
   const longestLabelLength = categories.reduce((max, label) => Math.max(max, label.length), 0)
-  const shouldWrapLabels = longestLabelLength > 3
-  const maxCharsPerLine = 3
+  const shouldWrapLabels = longestLabelLength > 4
+  const maxCharsPerLine = 4
   const axisLabelMargin = 8
   const fontSize = 12
   const lineHeight = fontSize * 1.2

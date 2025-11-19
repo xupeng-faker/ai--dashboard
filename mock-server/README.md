@@ -1,6 +1,6 @@
 # Mock Server
 
-可扩展的本地 Mock 服务，当前已实现部门筛选接口 `/ai_transform/webapi/department-info/children`，方便前端在未对接真实后端时调试。
+可扩展的本地 Mock 服务，当前已实现部门筛选接口 `/ai_transform_webapi/department-info/children`，方便前端在未对接真实后端时调试。
 
 ## 功能特点
 
@@ -20,7 +20,7 @@ npm run dev
 默认端口为 `3800`，启动后可访问：
 
 - `http://localhost:3800/health` 检查服务
-- `http://localhost:3800/ai_transform/webapi/department-info/children?deptId=0` 获取三级部门
+- `http://localhost:3800/ai_transform_webapi/department-info/children?deptId=0` 获取三级部门
 
 如需提供给前端使用，请将 `VITE_API_BASE_URL` 指向 `http://localhost:3800`（或对应端口）。
 

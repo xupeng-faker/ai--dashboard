@@ -11,6 +11,7 @@ import BarLineChart from '@/components/dashboard/BarLineChart.vue'
 import type {
   CertificationDashboardData,
   CertificationDashboardFilters,
+  CompetenceCategoryCertStatistics,
   DepartmentCertStatistic,
   StaffChartPoint,
 } from '@/types/dashboard'
@@ -45,15 +46,15 @@ const resolveQualifiedRate = (item?: DepartmentCertStatistic | null) =>
 const departmentStatsPoints = computed<StaffChartPoint[]>(() =>
   departmentStatistics.value.map((item) => ({
     label: item.deptName?.trim().length ? item.deptName : item.deptCode,
-    count: resolveCertificationCount(item),
-    rate: resolveCertificationRate(item),
+    count: resolveQualifiedCount(item),
+    rate: resolveQualifiedRate(item),
   }))
 )
 const departmentCertificationStatsPoints = computed<StaffChartPoint[]>(() =>
   departmentStatistics.value.map((item) => ({
     label: item.deptName?.trim().length ? item.deptName : item.deptCode,
-    count: resolveQualifiedCount(item),
-    rate: resolveQualifiedRate(item),
+    count: resolveCertificationCount(item),
+    rate: resolveCertificationRate(item),
   }))
 )
 const hasDepartmentStats = computed(() => departmentStatsPoints.value.length > 0)
@@ -77,8 +78,8 @@ const departmentLegendTotals = computed<Record<string, string> | undefined>(() =
   const total = dashboardData.value?.employeeCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
-    [departmentCountLabel.value]: `${resolveCertificationCount(total)}人`,
-    占比: `${resolveCertificationRate(total)}%`,
+    [departmentCountLabel.value]: `${resolveQualifiedCount(total)}人`,
+    占比: `${resolveQualifiedRate(total)}%`,
   }
 })
 const departmentCertificationLegendTotals = computed<Record<string, string> | undefined>(() => {
@@ -86,8 +87,44 @@ const departmentCertificationLegendTotals = computed<Record<string, string> | un
   const total = dashboardData.value?.employeeCertStatistics?.totalStatistics
   if (!total) return undefined
   return {
-    认证总人数: `${resolveQualifiedCount(total)}人`,
-    占比: `${resolveQualifiedRate(total)}%`,
+    认证总人数: `${resolveCertificationCount(total)}人`,
+    占比: `${resolveCertificationRate(total)}%`,
+  }
+})
+
+// 职位类统计数据
+const competenceCategoryStatistics = computed(
+  () => dashboardData.value?.competenceCategoryCertStatistics?.categoryStatistics ?? []
+)
+const hasJobCategoryStats = computed(() => competenceCategoryStatistics.value.length > 0)
+const resolveJobCategoryQualifiedCount = (item?: CompetenceCategoryCertStatistics | null) =>
+  item?.qualifiedCount ?? 0
+const resolveJobCategoryCertificationCount = (item?: CompetenceCategoryCertStatistics | null) =>
+  item?.certifiedCount ?? 0
+const resolveJobCategoryQualifiedRate = (item?: CompetenceCategoryCertStatistics | null) =>
+  Number(item?.qualifiedRate ?? 0)
+const resolveJobCategoryCertificationRate = (item?: CompetenceCategoryCertStatistics | null) =>
+  Number(item?.certRate ?? 0)
+
+// 职位类任职数据图例总计
+const jobCategoryAppointmentLegendTotals = computed<Record<string, string> | undefined>(() => {
+  if (!hasJobCategoryStats.value) return undefined
+  const total = dashboardData.value?.competenceCategoryCertStatistics?.totalStatistics
+  if (!total) return undefined
+  return {
+    任职人数: `${resolveJobCategoryQualifiedCount(total)}人`,
+    占比: `${resolveJobCategoryQualifiedRate(total)}%`,
+  }
+})
+
+// 职位类认证数据图例总计
+const jobCategoryCertificationLegendTotals = computed<Record<string, string> | undefined>(() => {
+  if (!hasJobCategoryStats.value) return undefined
+  const total = dashboardData.value?.competenceCategoryCertStatistics?.totalStatistics
+  if (!total) return undefined
+  return {
+    认证人数: `${resolveJobCategoryCertificationCount(total)}人`,
+    占比: `${resolveJobCategoryCertificationRate(total)}%`,
   }
 })
 
@@ -117,6 +154,31 @@ const handleCellClick = (row: Record<string, unknown>, column: string) => {
     },
   })
 }
+
+const formatNumber = (value: number) => {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return '-'
+  }
+  return new Intl.NumberFormat('zh-CN').format(value)
+}
+
+const formatPercent = (value: number) => {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return '-'
+  }
+  if (value > 1) {
+    return `${value.toFixed(1)}%`
+  }
+  return `${(value * 100).toFixed(1)}%`
+}
+
+const getRowClassName = ({ rowIndex }: { rowIndex: number }) => {
+  if (rowIndex % 2 === 0) {
+    return 'row-even'
+  }
+  return 'row-odd'
+}
+
 
 const resetFilters = () => {
   filters.value = {
@@ -195,7 +257,8 @@ onActivated(() => {
       </el-row>
 
       <el-row :gutter="16" class="summary-table-grid">
-        <el-col :xs="24" :lg="12">
+        <!-- 1. 专家认证数据 -->
+        <el-col :xs="24" :lg="24">
           <CertificationSummaryTable
             title="专家AI认证数据"
             :columns="[
@@ -226,7 +289,8 @@ onActivated(() => {
             :on-cell-click="handleCellClick"
           />
         </el-col>
-        <el-col :xs="24" :lg="12">
+        <!-- 2. 专家任职数据 -->
+        <el-col :xs="24" :lg="24">
           <CertificationSummaryTable
             title="专家AI任职数据"
             :columns="[
@@ -270,98 +334,155 @@ onActivated(() => {
             :on-cell-click="handleCellClick"
           />
         </el-col>
-        <el-col :xs="24" :lg="12">
-          <CertificationSummaryTable
-            title="干部AI认证数据"
-            :columns="[
-              { prop: 'maturityLevel', label: '干部岗位AI成熟度评估', width: 180 },
-              { prop: 'jobCategory', label: '职位类', width: 140 },
-              {
-                prop: 'baseline',
-                label: '基线人数',
-                width: 110,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'aiCertificateHolders',
-                label: 'AI专业级持证人数',
-                width: 180,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'subjectTwoPassed',
-                label: '科目二通过人数',
-                width: 160,
-                valueType: 'number',
-              },
-              {
-                prop: 'certificateRate',
-                label: 'AI专业级持证率',
-                width: 150,
-                valueType: 'percent',
-              },
-              {
-                prop: 'subjectTwoRate',
-                label: '科目二通过率',
-                width: 140,
-                valueType: 'percent',
-              },
-              {
-                prop: 'complianceRate',
-                label: '按要求持证率',
-                width: 130,
-                valueType: 'percent',
-              },
-            ]"
-            :data="dashboardData.cadreCertification"
-            :on-cell-click="handleCellClick"
-          />
+        <!-- 3. 干部任职数据 -->
+        <el-col :xs="24" :lg="24">
+          <el-card shadow="hover" class="summary-table-card">
+            <template #header>
+              <div class="summary-table-card__header">
+                <h3>干部AI任职数据</h3>
+              </div>
+            </template>
+            <el-table
+              :data="dashboardData.cadreAppointment"
+              border
+              stripe
+              size="small"
+              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+              :row-class-name="getRowClassName"
+            >
+              <!-- 合并的成熟度/职位类列 -->
+              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180">
+                <template #default="{ row }">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span v-if="row.isMaturityRow">{{ row.maturityLevel }}</span>
+                    <span v-else style="flex: 1;"></span>
+                    <span v-if="!row.isMaturityRow">{{ row.jobCategory }}</span>
+                    <span v-else style="flex: 1;"></span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="baseline" label="基线人数" min-width="80">
+                <template #default="{ row }">
+                  <el-link
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleCellClick(row, 'baseline')"
+                  >
+                    {{ formatNumber(row.baseline) }}
+                  </el-link>
+                </template>
+              </el-table-column>
+              <el-table-column prop="appointed" label="AI任职人数" min-width="100">
+                <template #default="{ row }">
+                  <el-link
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleCellClick(row, 'appointed')"
+                  >
+                    {{ formatNumber(row.appointed) }}
+                  </el-link>
+                </template>
+              </el-table-column>
+              <el-table-column prop="appointedByRequirement" label="按要求AI任职人数" min-width="130">
+                <template #default="{ row }">
+                  <el-link
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleCellClick(row, 'appointedByRequirement')"
+                  >
+                    {{ formatNumber(row.appointedByRequirement) }}
+                  </el-link>
+                </template>
+              </el-table-column>
+              <el-table-column prop="appointmentRate" label="AI任职率" min-width="90">
+                <template #default="{ row }">
+                  {{ formatPercent(row.appointmentRate) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="certificationCompliance" label="按要求AI认证人数占比" min-width="140">
+                <template #default="{ row }">
+                  {{ formatPercent(row.certificationCompliance) }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
         </el-col>
-        <el-col :xs="24" :lg="12">
-          <CertificationSummaryTable
-            title="干部AI任职数据"
-            :columns="[
-              { prop: 'maturityLevel', label: '干部岗位AI成熟度评估', width: 180 },
-              { prop: 'jobCategory', label: '职位类', width: 140 },
-              {
-                prop: 'baseline',
-                label: '基线人数',
-                width: 110,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'appointed',
-                label: 'AI任职人数',
-                width: 130,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'appointedByRequirement',
-                label: '按要求AI任职人数',
-                width: 180,
-                clickable: true,
-                valueType: 'number',
-              },
-              {
-                prop: 'appointmentRate',
-                label: 'AI任职率',
-                width: 130,
-                valueType: 'percent',
-              },
-              {
-                prop: 'certificationCompliance',
-                label: '按要求AI认证人数占比',
-                width: 190,
-                valueType: 'percent',
-              },
-            ]"
-            :data="dashboardData.cadreAppointment"
-            :on-cell-click="handleCellClick"
-          />
+        <!-- 4. 干部认证数据 -->
+        <el-col :xs="24" :lg="24">
+          <el-card shadow="hover" class="summary-table-card">
+            <template #header>
+              <div class="summary-table-card__header">
+                <h3>干部AI认证数据</h3>
+              </div>
+            </template>
+            <el-table
+              :data="dashboardData.cadreCertification"
+              border
+              stripe
+              size="small"
+              :header-cell-style="{ background: 'rgba(58, 122, 254, 0.06)', color: '#2f3b52' }"
+              :row-class-name="getRowClassName"
+            >
+              <!-- 合并的成熟度/职位类列 -->
+              <el-table-column prop="maturityLevel" label="岗位AI成熟度/职位类" min-width="180">
+                <template #default="{ row }">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span v-if="row.isMaturityRow">{{ row.maturityLevel }}</span>
+                    <span v-else style="flex: 1;"></span>
+                    <span v-if="!row.isMaturityRow">{{ row.jobCategory }}</span>
+                    <span v-else style="flex: 1;"></span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="baseline" label="基线人数" min-width="110">
+                <template #default="{ row }">
+                  <el-link
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleCellClick(row, 'baseline')"
+                  >
+                    {{ formatNumber(row.baseline) }}
+                  </el-link>
+                </template>
+              </el-table-column>
+              <el-table-column prop="aiCertificateHolders" label="AI专业级持证人数" min-width="180">
+                <template #default="{ row }">
+                  <el-link
+                    type="primary"
+                    :underline="false"
+                    class="clickable-cell"
+                    @click="handleCellClick(row, 'aiCertificateHolders')"
+                  >
+                    {{ formatNumber(row.aiCertificateHolders) }}
+                  </el-link>
+                </template>
+              </el-table-column>
+              <el-table-column prop="subjectTwoPassed" label="科目二通过人数" min-width="160">
+                <template #default="{ row }">
+                  {{ formatNumber(row.subjectTwoPassed) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="certificateRate" label="AI专业级持证率" min-width="150">
+                <template #default="{ row }">
+                  {{ formatPercent(row.certificateRate) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="subjectTwoRate" label="科目二通过率" min-width="140">
+                <template #default="{ row }">
+                  {{ formatPercent(row.subjectTwoRate) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="complianceRate" label="按要求持证率" min-width="130">
+                <template #default="{ row }">
+                  {{ formatPercent(row.complianceRate) }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
         </el-col>
       </el-row>
 
@@ -422,6 +543,7 @@ onActivated(() => {
               :points="dashboardData.allStaff.jobCategoryAppointment"
               count-label="任职人数"
               rate-label="占比"
+              :legend-totals="jobCategoryAppointmentLegendTotals"
               :height="320"
             />
           </el-col>
@@ -431,6 +553,7 @@ onActivated(() => {
               :points="dashboardData.allStaff.jobCategoryCertification"
               count-label="认证人数"
               rate-label="占比"
+              :legend-totals="jobCategoryCertificationLegendTotals"
               :height="320"
             />
           </el-col>
@@ -495,6 +618,47 @@ onActivated(() => {
 
   :deep(.summary-table-card) {
     width: 100%;
+    border: none;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    .summary-table-card__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+      }
+    }
+
+    :deep(.el-card__body) {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: $spacing-md;
+    }
+
+    :deep(.el-table) {
+      flex: 1;
+      --el-table-border-color: rgba(47, 59, 82, 0.08);
+      --el-table-row-hover-bg-color: rgba(58, 122, 254, 0.08);
+    }
+
+    :deep(.row-even) {
+      background: rgba(58, 122, 254, 0.02);
+    }
+
+    :deep(.row-odd) {
+      background: #fff;
+    }
+
+    .clickable-cell {
+      cursor: pointer;
+    }
   }
 }
 
